@@ -1,0 +1,44 @@
+plugins {
+    id 'java-gradle-plugin'
+    id 'maven-publish'
+    id "com.gradle.plugin-publish" version "0.9.10"
+}
+
+group 'edu.wpi.first'
+version '0.0.1'
+
+publishing {
+    publications {
+        plugin(MavenPublication) {
+            artifact (jar) {
+                if (project.hasProperty('localPublish')) {
+                    classifier null
+                    groupId 'gradle.plugin.' + group
+                }
+            }
+        }
+    }
+}
+
+pluginBundle {
+    website = 'https://github.com/wpilibsuite/gradle-jni'
+    vcsUrl = 'https://github.com/wpilibsuite/gradle-jni'
+    description = 'This plugin provides easy to use JNI support for gradle.'
+    tags = ['groovy', 'jni', 'utils', 'maven', 'frc', 'wpilib']
+
+    plugins {
+        GradleJni {
+            id = 'edu.wpi.first.gradle-jni'
+            displayName = 'Gradle JNI'
+        }
+    }
+}
+
+gradlePlugin {
+    plugins {
+        GradleJni {
+            id = 'edu.wpi.first.gradle-jni'
+            implementationClass = 'edu.wpi.first.jni.GradleJni'
+        }
+    }
+}
