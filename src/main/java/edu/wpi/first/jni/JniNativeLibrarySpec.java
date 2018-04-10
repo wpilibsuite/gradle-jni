@@ -11,4 +11,7 @@ public interface JniNativeLibrarySpec extends NativeLibrarySpec, JniNativeLibrar
 
     void setJniCrossCompileOptions(List<JniCrossCompileOptions> options);
     List<JniCrossCompileOptions> getJniCrossCompileOptions();
+
+    boolean getEnableCheckTask();
+    void setEnableCheckTask(boolean val);
 }

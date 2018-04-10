@@ -10,6 +10,7 @@ public class DefaultJniNativeLibrary extends DefaultNativeLibrarySpec implements
     private List<JavaCompile> javaCompile = new ArrayList<>();
     private List<JniCrossCompileOptions> crossCompileOptions = new ArrayList<>();
     private List<String> jniHeaderLocation = new ArrayList<>();
+    private boolean enableCheckTask = false;
 
     public DefaultJniNativeLibrary() {
         super();
@@ -35,5 +36,15 @@ public class DefaultJniNativeLibrary extends DefaultNativeLibrarySpec implements
 
     public void setJniHeaderLocations(List<String> location) {
         jniHeaderLocation = location;
+    }
+
+    @Override
+    public boolean getEnableCheckTask() {
+        return enableCheckTask;
+    }
+
+    @Override
+    public void setEnableCheckTask(boolean val) {
+        enableCheckTask = val;
     }
  }
