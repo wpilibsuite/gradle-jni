@@ -2,19 +2,8 @@
 gradle-jni is a utility library for enabling easy to build JNI compatible plugins
 
 ```gradle
-import edu.wpi.first.jni.JniNativeLibrarySpec
-import edu.wpi.first.jni.JniCrossCompileOptions
-
-buildscript {
-    repositories {
-        mavenLocal()
-        maven {
-            url "https://plugins.gradle.org/m2/"
-        }
-    }
-    dependencies {
-        classpath 'gradle.plugin.edu.wpi.first:gradle-jni:0.0.1'
-    }
+plugins {
+  id 'edu.wpi.first.gradle-jni' version '0.0.2'
 }
 
 model {
