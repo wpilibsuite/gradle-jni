@@ -15,6 +15,7 @@ import org.gradle.api.Task;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.language.base.internal.ProjectLayout;
+import org.gradle.language.base.plugins.ComponentModelBasePlugin;
 import org.gradle.language.nativeplatform.tasks.AbstractNativeSourceCompileTask;
 import org.gradle.model.ModelMap;
 import org.gradle.model.Mutate;
@@ -36,8 +37,20 @@ import org.gradle.platform.base.ComponentSpecContainer;
 import org.gradle.platform.base.ComponentType;
 import org.gradle.platform.base.TypeBuilder;
 
+import groovy.lang.Closure;
+
+
+
 class GradleJni implements Plugin<Project> {
   public void apply(Project project) {
+    project.getPluginManager().apply(ComponentModelBasePlugin.class);
+    Closure c = new Closure(null) {
+      public Object doCall(String a, String b, List<String> c) {
+        return new JniCrossCompileOptions(a, b, c);
+      }
+    };
+    project.getExtensions().getExtraProperties().set("JniNativeLibrarySpec", JniNativeLibrarySpec.class);
+    project.getExtensions().getExtraProperties().set("JniCrossCompileOptions", c);
   }
 
   static class Rules extends RuleSource {

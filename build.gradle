@@ -7,6 +7,11 @@ plugins {
 group 'edu.wpi.first'
 version '0.0.2'
 
+compileJava {
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+}
+
 publishing {
     publications {
         plugin(MavenPublication) {
