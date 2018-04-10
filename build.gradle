@@ -33,7 +33,7 @@ pluginBundle {
 
     plugins {
         GradleJni {
-            id = 'edu.wpi.first.gradle-jni'
+            id = 'edu.wpi.first.GradleJni'
             displayName = 'Gradle JNI'
         }
     }
@@ -42,8 +42,12 @@ pluginBundle {
 gradlePlugin {
     plugins {
         GradleJni {
-            id = 'edu.wpi.first.gradle-jni'
+            id = 'edu.wpi.first.GradleJni'
             implementationClass = 'edu.wpi.first.jni.GradleJni'
         }
     }
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '4.6'
 }

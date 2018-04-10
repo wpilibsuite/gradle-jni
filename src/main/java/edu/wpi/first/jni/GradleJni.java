@@ -73,8 +73,7 @@ class GradleJni implements Plugin<Project> {
       String nmPath = prefix + "nm";
 
       String input = binary.getBuildTask().getName();
-      String checkTaskName = "check2" + input.substring(0, 1).toUpperCase() + input.substring(1) + "JniSymbols";
-      System.out.println(checkTaskName);
+      String checkTaskName = "check" + input.substring(0, 1).toUpperCase() + input.substring(1) + "JniSymbols";
       tasks.create(checkTaskName, JniSymbolCheck.class, task -> {
         task.setGroup("Build");
         task.setDescription("Checks that JNI symbols exist in the native libraries");
@@ -166,7 +165,6 @@ class GradleJni implements Plugin<Project> {
                   f.setAccessible(true);
                   ToolRegistry tr = (ToolRegistry)f.get(gp);
                   f.setAccessible(false);
-                  System.out.println(tr.getTool(ToolType.CPP_COMPILER).getExecutable());
                   String cpp = tr.getTool(ToolType.CPP_COMPILER).getExecutable();
                   String prefix = "";
                   int index = cpp.lastIndexOf('-');
@@ -178,7 +176,6 @@ class GradleJni implements Plugin<Project> {
                 } catch (ClassNotFoundException e) {
                   System.out.println("Class Not Found");
                 } catch (NoSuchFieldException ex) {
-                  System.out.println(binary.getDisplayName());
                   System.out.println("No Fields");
                 } catch (IllegalAccessException ex) {
                   System.out.println("Illegal access");
