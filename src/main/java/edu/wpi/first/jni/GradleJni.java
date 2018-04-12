@@ -128,8 +128,8 @@ class GradleJni implements Plugin<Project> {
           }
 
         });
-        binary.checkedBy(task);
       });
+      binary.checkedBy(tasks.get(checkTaskName));
     }
 
     @Mutate
