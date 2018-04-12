@@ -2,6 +2,9 @@ package edu.wpi.first.jni;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+
 
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.nativeplatform.internal.DefaultNativeLibrarySpec;
@@ -9,7 +12,7 @@ import org.gradle.nativeplatform.internal.DefaultNativeLibrarySpec;
 public class DefaultJniNativeLibrary extends DefaultNativeLibrarySpec implements JniNativeLibrarySpec, JniNativeLibraryInternal {
     private List<JavaCompile> javaCompile = new ArrayList<>();
     private List<JniCrossCompileOptions> crossCompileOptions = new ArrayList<>();
-    private List<String> jniHeaderLocation = new ArrayList<>();
+    private Map<JavaCompile, String> jniHeaderLocation = new HashMap<>();
     private boolean enableCheckTask = false;
 
     public DefaultJniNativeLibrary() {
@@ -30,11 +33,11 @@ public class DefaultJniNativeLibrary extends DefaultNativeLibrarySpec implements
         crossCompileOptions = options;
     }
 
-    public List<String> getJniHeaderLocations() {
+    public Map<JavaCompile, String> getJniHeaderLocations() {
         return jniHeaderLocation;
     }
 
-    public void setJniHeaderLocations(List<String> location) {
+    public void setJniHeaderLocations(Map<JavaCompile, String> location) {
         jniHeaderLocation = location;
     }
 

@@ -79,14 +79,14 @@ class GradleJni implements Plugin<Project> {
         task.setDescription("Checks that JNI symbols exist in the native libraries");
         task.dependsOn(sharedBinary.getTasks().getLink());
         task.getInputs().file(sharedBinary.getSharedLibraryFile());
-        for (String j : jniComponent.getJniHeaderLocations()) {
+        for (String j : jniComponent.getJniHeaderLocations().values()) {
           task.getInputs().dir(j);
         }
         task.doLast(runner -> {
           String library = sharedBinary.getSharedLibraryFile().getAbsolutePath();
           // Get expected symbols
           List<String> symbolList = new ArrayList<>();
-          for (String loc : jniComponent.getJniHeaderLocations()) {
+          for (String loc : jniComponent.getJniHeaderLocations().values()) {
             FileTree tree = project.fileTree(loc);
             for (File file : tree) {
               try {
@@ -216,7 +216,7 @@ class GradleJni implements Plugin<Project> {
 
             binary.lib(new JniSystemDependencySet(jniFiles, project));
 
-            binary.lib(new JniSourceDependencySet(component.getJniHeaderLocations(), project));
+            binary.lib(new JniSourceDependencySet(component.getJniHeaderLocations().values(), project));
           }
         }
       }
@@ -233,7 +233,7 @@ class GradleJni implements Plugin<Project> {
 
           for (JavaCompile compileTask : component.getJavaCompileTasks()) {
             String jniHeaderLocation = project.getBuildDir().toString() + "/jniinclude/" + compileTask.getName();
-            component.getJniHeaderLocations().add(jniHeaderLocation);
+            component.getJniHeaderLocations().put(compileTask, jniHeaderLocation);
             List<String> args = compileTask.getOptions().getCompilerArgs();
             args.add("-h");
             args.add(jniHeaderLocation);

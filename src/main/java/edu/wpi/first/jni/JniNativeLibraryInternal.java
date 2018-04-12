@@ -1,8 +1,9 @@
 package edu.wpi.first.jni;
 
-import java.util.List;
+import java.util.Map;
+
+import org.gradle.api.tasks.compile.JavaCompile;
 
 public interface JniNativeLibraryInternal {
-    List<String> getJniHeaderLocations();
-    void setJniHeaderLocations(List<String> location);
+    void setJniHeaderLocations(Map<JavaCompile, String> location);
 }

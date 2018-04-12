@@ -1,6 +1,7 @@
 package edu.wpi.first.jni;
 
 import java.util.List;
+import java.util.Map;
 
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.nativeplatform.NativeLibrarySpec;
@@ -14,4 +15,6 @@ public interface JniNativeLibrarySpec extends NativeLibrarySpec, JniNativeLibrar
 
     boolean getEnableCheckTask();
     void setEnableCheckTask(boolean val);
+
+    Map<JavaCompile, String> getJniHeaderLocations();
 }
