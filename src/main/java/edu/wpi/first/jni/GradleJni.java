@@ -7,6 +7,7 @@ import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
@@ -89,9 +90,8 @@ class GradleJni implements Plugin<Project> {
           for (String loc : jniComponent.getJniHeaderLocations().values()) {
             FileTree tree = project.fileTree(loc);
             for (File file : tree) {
-              try {
-                Files.lines(file.toPath())
-                    .map(s -> s.trim())
+              try (Stream<String> stream = Files.lines(file.toPath())) {
+                    stream.map(s -> s.trim())
                     .filter(s -> !s.isEmpty() && (s.startsWith("JNIEXPORT ") && s.contains("JNICALL")))
                     .forEach(line -> {
                   symbolList.add(line.split("JNICALL")[1].trim());
