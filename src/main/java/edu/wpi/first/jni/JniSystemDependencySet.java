@@ -1,18 +1,18 @@
 package edu.wpi.first.jni;
 
-import java.util.List;
-
 import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
 import org.gradle.nativeplatform.NativeDependencySet;
+
+import java.util.List;
 
 public class JniSystemDependencySet implements NativeDependencySet {
     protected List<String> m_jniHeaders;
     protected Project m_project;
 
     public JniSystemDependencySet(List<String> jniHeaders, Project project) {
-      m_jniHeaders = jniHeaders;
-      m_project = project;
+        m_jniHeaders = jniHeaders;
+        m_project = project;
     }
 
     public FileCollection getIncludeRoots() {

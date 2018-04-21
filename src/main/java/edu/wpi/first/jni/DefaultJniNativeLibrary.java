@@ -1,13 +1,12 @@
 package edu.wpi.first.jni;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-
-
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.nativeplatform.internal.DefaultNativeLibrarySpec;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class DefaultJniNativeLibrary extends DefaultNativeLibrarySpec implements JniNativeLibrarySpec, JniNativeLibraryInternal {
     private List<JavaCompile> javaCompile = new ArrayList<>();
@@ -22,6 +21,7 @@ public class DefaultJniNativeLibrary extends DefaultNativeLibrarySpec implements
     public List<JavaCompile> getJavaCompileTasks() {
         return javaCompile;
     }
+
     public void setJavaCompileTasks(List<JavaCompile> compile) {
         javaCompile = compile;
     }
@@ -29,6 +29,7 @@ public class DefaultJniNativeLibrary extends DefaultNativeLibrarySpec implements
     public List<JniCrossCompileOptions> getJniCrossCompileOptions() {
         return crossCompileOptions;
     }
+
     public void setJniCrossCompileOptions(List<JniCrossCompileOptions> options) {
         crossCompileOptions = options;
     }
@@ -50,4 +51,4 @@ public class DefaultJniNativeLibrary extends DefaultNativeLibrarySpec implements
     public void setEnableCheckTask(boolean val) {
         enableCheckTask = val;
     }
- }
+}

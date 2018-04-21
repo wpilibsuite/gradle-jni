@@ -1,10 +1,10 @@
 package edu.wpi.first.jni;
 
-import java.util.Collection;
-
 import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
 import org.gradle.nativeplatform.NativeDependencySet;
+
+import java.util.Collection;
 
 
 public class JniSourceDependencySet implements NativeDependencySet {
@@ -12,8 +12,8 @@ public class JniSourceDependencySet implements NativeDependencySet {
     protected Project m_project;
 
     public JniSourceDependencySet(Collection<String> jniHeaders, Project project) {
-      m_jniHeaders = jniHeaders;
-      m_project = project;
+        m_jniHeaders = jniHeaders;
+        m_project = project;
     }
 
     public FileCollection getIncludeRoots() {
