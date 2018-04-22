@@ -227,6 +227,7 @@ class GradleJni implements Plugin<Project> {
 
                     for (JavaCompile compileTask : component.getJavaCompileTasks()) {
                         String jniHeaderLocation = project.getBuildDir().toString() + "/jniinclude/" + compileTask.getName();
+                        compileTask.getOutputs().dir(jniHeaderLocation);
                         component.getJniHeaderLocations().put(compileTask, jniHeaderLocation);
                         List<String> args = compileTask.getOptions().getCompilerArgs();
                         args.add("-h");
