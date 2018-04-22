@@ -28,6 +28,7 @@ import org.gradle.platform.base.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
@@ -68,7 +69,8 @@ class GradleJni implements Plugin<Project> {
             String nmPath = prefix + "nm";
 
             String input = binary.getBuildTask().getName();
-            String checkTaskName = "check" + input.substring(0, 1).toUpperCase() + input.substring(1) + "JniSymbols";
+            String projName = input.substring(0, 1).toUpperCase() + input.substring(1);
+            String checkTaskName = "check" + projName + "JniSymbols";
             tasks.create(checkTaskName, JniSymbolCheck.class, task -> {
                 task.setGroup("Build");
                 task.setDescription("Checks that JNI symbols exist in the native libraries");
@@ -77,7 +79,12 @@ class GradleJni implements Plugin<Project> {
                 for (String j : jniComponent.getJniHeaderLocations().values()) {
                     task.getInputs().dir(j);
                 }
+                task.getOutputs().file(task.foundSymbols);
+                task.foundSymbols.set(project.getLayout().getBuildDirectory().file("jnisymbols/" + projName + "/symbols.txt"));
                 task.doLast(runner -> {
+                    File symbolFile = task.foundSymbols.getAsFile().get();
+                    symbolFile.getParentFile().mkdirs();
+
                     String library = sharedBinary.getSharedLibraryFile().getAbsolutePath();
                     // Get expected symbols
                     List<String> symbolList = new ArrayList<>();
@@ -95,7 +102,6 @@ class GradleJni implements Plugin<Project> {
                             }
                         }
                     }
-
 
                     ByteArrayOutputStream nmOutput = new ByteArrayOutputStream();
                     project.exec(exec -> {
@@ -120,7 +126,14 @@ class GradleJni implements Plugin<Project> {
                         }
                         throw new GradleException("Found a definition that does not have a matching symbol " + missingString.toString());
                     }
-
+                    try (FileWriter writer = new FileWriter(symbolFile)) {
+                        for(String str: symbolList) {
+                            writer.write(str);
+                            writer.write('\n');
+                        }
+                    } catch (IOException ex) {
+                        System.out.println(ex);
+                    }
                 });
             });
             binary.checkedBy(tasks.get(checkTaskName));
