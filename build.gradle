@@ -5,7 +5,7 @@ plugins {
 }
 
 group 'edu.wpi.first'
-version '0.1.0'
+version '0.1.1'
 
 compileJava {
     sourceCompatibility = 1.8
@@ -49,5 +49,5 @@ gradlePlugin {
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '4.6'
+    gradleVersion = '4.7'
 }

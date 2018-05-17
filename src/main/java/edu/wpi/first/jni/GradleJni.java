@@ -1,41 +1,36 @@
 package edu.wpi.first.jni;
 
-import groovy.lang.Closure;
-import org.gradle.api.GradleException;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
-import org.gradle.api.file.FileTree;
+import org.gradle.api.plugins.ExtensionContainer;
 import org.gradle.api.tasks.compile.JavaCompile;
+import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.language.base.internal.ProjectLayout;
 import org.gradle.language.base.plugins.ComponentModelBasePlugin;
 import org.gradle.language.nativeplatform.tasks.AbstractNativeSourceCompileTask;
+import org.gradle.model.Finalize;
 import org.gradle.model.ModelMap;
 import org.gradle.model.Mutate;
 import org.gradle.model.RuleSource;
 import org.gradle.model.Validate;
 import org.gradle.nativeplatform.NativeBinarySpec;
 import org.gradle.nativeplatform.SharedLibraryBinarySpec;
-import org.gradle.nativeplatform.platform.internal.NativePlatformInternal;
+import org.gradle.nativeplatform.toolchain.GccCompatibleToolChain;
 import org.gradle.nativeplatform.toolchain.NativeToolChain;
 import org.gradle.nativeplatform.toolchain.NativeToolChainRegistry;
-import org.gradle.nativeplatform.toolchain.internal.PlatformToolProvider;
-import org.gradle.nativeplatform.toolchain.internal.ToolType;
-import org.gradle.nativeplatform.toolchain.internal.gcc.AbstractGccCompatibleToolChain;
-import org.gradle.nativeplatform.toolchain.internal.msvcpp.VisualCppToolChain;
-import org.gradle.nativeplatform.toolchain.internal.tools.ToolRegistry;
-import org.gradle.platform.base.*;
+import org.gradle.nativeplatform.toolchain.VisualCpp;
+import org.gradle.nativeplatform.toolchain.internal.msvcpp.VisualStudioLocator;
+import org.gradle.platform.base.BinarySpec;
+import org.gradle.platform.base.ComponentSpec;
+import org.gradle.platform.base.ComponentSpecContainer;
+import org.gradle.platform.base.ComponentType;
+import org.gradle.platform.base.TypeBuilder;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Stream;
-
+import groovy.lang.Closure;
 
 class GradleJni implements Plugin<Project> {
     public void apply(Project project) {
@@ -47,6 +42,7 @@ class GradleJni implements Plugin<Project> {
         };
         project.getExtensions().getExtraProperties().set("JniNativeLibrarySpec", JniNativeLibrarySpec.class);
         project.getExtensions().getExtraProperties().set("JniCrossCompileOptions", c);
+        project.getExtensions().create("gradleJniConfiguration", GradleJniConfiguration.class);
     }
 
     static class Rules extends RuleSource {
@@ -56,9 +52,7 @@ class GradleJni implements Plugin<Project> {
             builder.internalView(JniNativeLibraryInternal.class);
         }
 
-        private void setupGccCheckTask(String prefix, NativeBinarySpec binary,
-                                       ModelMap<Task> tasks, JniNativeLibrarySpec jniComponent,
-                                       Project project) {
+        private void setupCheckTasks(NativeBinarySpec binary, ModelMap<Task> tasks, JniNativeLibrarySpec jniComponent, Project project) {
             if (!binary.isBuildable()) {
                 return;
             }
@@ -66,7 +60,6 @@ class GradleJni implements Plugin<Project> {
                 return;
             }
             SharedLibraryBinarySpec sharedBinary = (SharedLibraryBinarySpec) binary;
-            String nmPath = prefix + "nm";
 
             String input = binary.getBuildTask().getName();
             String projName = input.substring(0, 1).toUpperCase() + input.substring(1);
@@ -80,63 +73,30 @@ class GradleJni implements Plugin<Project> {
                     task.getInputs().dir(j);
                 }
                 task.getOutputs().file(task.foundSymbols);
+                task.binaryToCheck = sharedBinary;
+                task.jniComponent = jniComponent;
                 task.foundSymbols.set(project.getLayout().getBuildDirectory().file("jnisymbols/" + projName + "/symbols.txt"));
-                task.doLast(runner -> {
-                    File symbolFile = task.foundSymbols.getAsFile().get();
-                    symbolFile.getParentFile().mkdirs();
-
-                    String library = sharedBinary.getSharedLibraryFile().getAbsolutePath();
-                    // Get expected symbols
-                    List<String> symbolList = new ArrayList<>();
-                    for (String loc : jniComponent.getJniHeaderLocations().values()) {
-                        FileTree tree = project.fileTree(loc);
-                        for (File file : tree) {
-                            try (Stream<String> stream = Files.lines(file.toPath())) {
-                                stream.map(s -> s.trim())
-                                        .filter(s -> !s.isEmpty() && (s.startsWith("JNIEXPORT ") && s.contains("JNICALL")))
-                                        .forEach(line -> {
-                                            symbolList.add(line.split("JNICALL")[1].trim());
-                                        });
-                            } catch (IOException e) {
-                                continue;
-                            }
-                        }
-                    }
-
-                    ByteArrayOutputStream nmOutput = new ByteArrayOutputStream();
-                    project.exec(exec -> {
-                        exec.commandLine(nmPath, library);
-                        exec.setStandardOutput(nmOutput);
-                    });
-
-                    String nmSymbols = nmOutput.toString().replace("\r", "");
-                    List<String> missingSymbols = new ArrayList<>();
-
-                    for (String symbol : symbolList) {
-                        if (!nmSymbols.contains(symbol + "\n")) {
-                            missingSymbols.add(symbol);
-                        }
-                    }
-
-                    if (!missingSymbols.isEmpty()) {
-                        StringBuilder missingString = new StringBuilder();
-                        for (String symbol : missingSymbols) {
-                            missingString.append(symbol);
-                            missingString.append('\n');
-                        }
-                        throw new GradleException("Found a definition that does not have a matching symbol " + missingString.toString());
-                    }
-                    try (FileWriter writer = new FileWriter(symbolFile)) {
-                        for(String str: symbolList) {
-                            writer.write(str);
-                            writer.write('\n');
-                        }
-                    } catch (IOException ex) {
-                        System.out.println(ex);
-                    }
-                });
             });
             binary.checkedBy(tasks.get(checkTaskName));
+        }
+
+        @Finalize
+        void getPlatformToolChains(NativeToolChainRegistry toolChains, ExtensionContainer extCont, ServiceRegistry serviceRegistry) {
+            GradleJniConfiguration ext = extCont.getByType(GradleJniConfiguration.class);
+            ext.vsLocator = serviceRegistry.get(VisualStudioLocator.class);
+            for (NativeToolChain tc : toolChains) {
+                if (tc instanceof VisualCpp) {
+                    VisualCpp vtc = (VisualCpp) tc;
+                    vtc.eachPlatform(t -> {
+                        ext.visualCppPlatforms.add(t);
+                    });
+                } else if (tc instanceof GccCompatibleToolChain) {
+                    GccCompatibleToolChain gtc = (GccCompatibleToolChain) tc;
+                    gtc.eachPlatform(t -> {
+                        ext.gccLikePlatforms.add(t);
+                    });
+                }
+            }
         }
 
         @Mutate
@@ -159,37 +119,8 @@ class GradleJni implements Plugin<Project> {
 
                         boolean cross = false;
 
-                        NativeToolChain toolchain = binary.getToolChain();
-
                         if (component.getEnableCheckTask()) {
-                            if (toolchain instanceof AbstractGccCompatibleToolChain) {
-                                AbstractGccCompatibleToolChain gccToolchain = (AbstractGccCompatibleToolChain) toolchain;
-                                PlatformToolProvider gp = gccToolchain.select((NativePlatformInternal) binary.getTargetPlatform());
-
-                                try {
-                                    Class c = Class.forName("org.gradle.nativeplatform.toolchain.internal.gcc.GccPlatformToolProvider");
-                                    Field f = c.getDeclaredField("toolRegistry");
-                                    f.setAccessible(true);
-                                    ToolRegistry tr = (ToolRegistry) f.get(gp);
-                                    f.setAccessible(false);
-                                    String cpp = tr.getTool(ToolType.CPP_COMPILER).getExecutable();
-                                    String prefix = "";
-                                    int index = cpp.lastIndexOf('-');
-                                    if (index != -1) {
-                                        prefix = cpp.substring(0, cpp.lastIndexOf('-') + 1);
-                                    }
-
-                                    setupGccCheckTask(prefix, binary, tasks, component, project);
-                                } catch (ClassNotFoundException e) {
-                                    System.out.println("Class Not Found");
-                                } catch (NoSuchFieldException ex) {
-                                    System.out.println("No Fields");
-                                } catch (IllegalAccessException ex) {
-                                    System.out.println("Illegal access");
-                                }
-                            } else if (toolchain instanceof VisualCppToolChain) {
-                                // TODO: Get MSVC Working
-                            }
+                            setupCheckTasks(binary, tasks, component, project);
                         }
 
                         for (JniCrossCompileOptions config : component.getJniCrossCompileOptions()) {
@@ -239,7 +170,8 @@ class GradleJni implements Plugin<Project> {
                     assert !component.getJavaCompileTasks().isEmpty();
 
                     for (JavaCompile compileTask : component.getJavaCompileTasks()) {
-                        String jniHeaderLocation = project.getBuildDir().toString() + "/jniinclude/" + compileTask.getName();
+                        String jniHeaderLocation = project.getBuildDir().toString() + "/jniinclude/"
+                                + compileTask.getName();
                         compileTask.getOutputs().dir(jniHeaderLocation);
                         component.getJniHeaderLocations().put(compileTask, jniHeaderLocation);
                         List<String> args = compileTask.getOptions().getCompilerArgs();
