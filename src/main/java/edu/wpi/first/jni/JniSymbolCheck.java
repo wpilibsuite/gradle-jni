@@ -159,7 +159,8 @@ public class JniSymbolCheck extends DefaultTask {
             org.gradle.nativeplatform.toolchain.internal.msvcpp.VisualCpp vscpp = vsi.getVisualCpp()
                 .forPlatform((NativePlatformInternal) binaryToCheck.getTargetPlatform());
             File cppPath = vscpp.getCompilerExecutable();
-            File cppDir = cppPath.getParentFile();
+            File cppDir = new File(cppPath.getParentFile().getParentFile().toString(), "x64");
+
             File dumpbinDir = new File(cppDir, "dumpbin.exe");
             handleWindowsSymbolCheck(dumpbinDir);
             found = true;
