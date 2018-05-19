@@ -30,18 +30,11 @@ import org.gradle.platform.base.ComponentSpecContainer;
 import org.gradle.platform.base.ComponentType;
 import org.gradle.platform.base.TypeBuilder;
 
-import groovy.lang.Closure;
-
 class GradleJni implements Plugin<Project> {
     public void apply(Project project) {
         project.getPluginManager().apply(ComponentModelBasePlugin.class);
-        Closure c = new Closure(null) {
-            public Object doCall(String a, String b, List<String> c) {
-                return new JniCrossCompileOptions(a, b, c);
-            }
-        };
         project.getExtensions().getExtraProperties().set("JniNativeLibrarySpec", JniNativeLibrarySpec.class);
-        project.getExtensions().getExtraProperties().set("JniCrossCompileOptions", c);
+        project.getExtensions().getExtraProperties().set("JniCrossCompileOptions", new CreateJniCrossCompileOptions());
         project.getExtensions().create("gradleJniConfiguration", GradleJniConfiguration.class);
     }
 
