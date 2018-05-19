@@ -36,6 +36,9 @@ class GradleJni implements Plugin<Project> {
     project.getExtensions().getExtraProperties().set("JniNativeLibrarySpec", JniNativeLibrarySpec.class);
     project.getExtensions().getExtraProperties().set("JniCrossCompileOptions", new CreateJniCrossCompileOptions());
     project.getExtensions().create("gradleJniConfiguration", GradleJniConfiguration.class);
+    if (project.equals(project.getRootProject())) {
+      project.getTasks().create("extractEmbeddedJni", ExtractJniFilesTask.class);
+    }
   }
 
   static class Rules extends RuleSource {
@@ -120,10 +123,21 @@ class GradleJni implements Plugin<Project> {
             }
 
             for (JniCrossCompileOptions config : component.getJniCrossCompileOptions()) {
-              if (binary.getTargetPlatform().getArchitecture().getName() == config.architecture
-                  && binary.getTargetPlatform().getOperatingSystem().getName() == config.operatingSystem) {
+              if ((binary.getTargetPlatform().getArchitecture().getName().equals(config.architecture)
+                  && binary.getTargetPlatform().getOperatingSystem().getName().equals(config.operatingSystem))
+                  || binary.getTargetPlatform().getName().equals(config.name)) {
                 cross = true;
-                jniFiles.addAll(config.jniHeaderLocations);
+                if (config.jniHeaderLocations == null) {
+                  ExtractJniFilesTask extractTask = (ExtractJniFilesTask) project.getRootProject().getTasks()
+                      .getByName("extractEmbeddedJni");
+                  binary.getTasks().withType(AbstractNativeSourceCompileTask.class, it -> {
+                    it.dependsOn(extractTask);
+                  });
+                  binary.lib(new JniExtractedDependencySet(extractTask.outputDirectory, project));
+                } else {
+                  jniFiles.addAll(config.jniHeaderLocations);
+                  binary.lib(new JniSystemDependencySet(jniFiles, project));
+                }
                 break;
               }
             }
@@ -147,9 +161,8 @@ class GradleJni implements Plugin<Project> {
                 // if it exists
                 jniFiles.add(base.concat("/darwin").toString());
               }
+              binary.lib(new JniSystemDependencySet(jniFiles, project));
             }
-
-            binary.lib(new JniSystemDependencySet(jniFiles, project));
 
             binary.lib(new JniSourceDependencySet(component.getJniHeaderLocations().values(), project));
           }
