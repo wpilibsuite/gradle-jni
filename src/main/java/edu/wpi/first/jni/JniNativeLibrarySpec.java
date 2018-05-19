@@ -7,17 +7,17 @@ import java.util.List;
 import java.util.Map;
 
 public interface JniNativeLibrarySpec extends NativeLibrarySpec, JniNativeLibraryInternal {
-    List<JavaCompile> getJavaCompileTasks();
+  List<JavaCompile> getJavaCompileTasks();
 
-    void setJavaCompileTasks(List<JavaCompile> compile);
+  void setJavaCompileTasks(List<JavaCompile> compile);
 
-    void setJniCrossCompileOptions(List<JniCrossCompileOptions> options);
+  void setJniCrossCompileOptions(List<JniCrossCompileOptions> options);
 
-    List<JniCrossCompileOptions> getJniCrossCompileOptions();
+  List<JniCrossCompileOptions> getJniCrossCompileOptions();
 
-    boolean getEnableCheckTask();
+  boolean getEnableCheckTask();
 
-    void setEnableCheckTask(boolean val);
+  void setEnableCheckTask(boolean val);
 
-    Map<JavaCompile, String> getJniHeaderLocations();
+  Map<JavaCompile, String> getJniHeaderLocations();
 }

@@ -31,148 +31,151 @@ import org.gradle.platform.base.ComponentType;
 import org.gradle.platform.base.TypeBuilder;
 
 class GradleJni implements Plugin<Project> {
-    public void apply(Project project) {
-        project.getPluginManager().apply(ComponentModelBasePlugin.class);
-        project.getExtensions().getExtraProperties().set("JniNativeLibrarySpec", JniNativeLibrarySpec.class);
-        project.getExtensions().getExtraProperties().set("JniCrossCompileOptions", new CreateJniCrossCompileOptions());
-        project.getExtensions().create("gradleJniConfiguration", GradleJniConfiguration.class);
+  public void apply(Project project) {
+    project.getPluginManager().apply(ComponentModelBasePlugin.class);
+    project.getExtensions().getExtraProperties().set("JniNativeLibrarySpec", JniNativeLibrarySpec.class);
+    project.getExtensions().getExtraProperties().set("JniCrossCompileOptions", new CreateJniCrossCompileOptions());
+    project.getExtensions().create("gradleJniConfiguration", GradleJniConfiguration.class);
+  }
+
+  static class Rules extends RuleSource {
+    @ComponentType
+    void registerJni(TypeBuilder<JniNativeLibrarySpec> builder) {
+      builder.defaultImplementation(DefaultJniNativeLibrary.class);
+      builder.internalView(JniNativeLibraryInternal.class);
     }
 
-    static class Rules extends RuleSource {
-        @ComponentType
-        void registerJni(TypeBuilder<JniNativeLibrarySpec> builder) {
-            builder.defaultImplementation(DefaultJniNativeLibrary.class);
-            builder.internalView(JniNativeLibraryInternal.class);
+    private void setupCheckTasks(NativeBinarySpec binary, ModelMap<Task> tasks, JniNativeLibrarySpec jniComponent,
+        Project project) {
+      if (!binary.isBuildable()) {
+        return;
+      }
+      if (!(binary instanceof SharedLibraryBinarySpec)) {
+        return;
+      }
+      SharedLibraryBinarySpec sharedBinary = (SharedLibraryBinarySpec) binary;
+
+      String input = binary.getBuildTask().getName();
+      String projName = input.substring(0, 1).toUpperCase() + input.substring(1);
+      String checkTaskName = "check" + projName + "JniSymbols";
+      tasks.create(checkTaskName, JniSymbolCheck.class, task -> {
+        task.setGroup("Build");
+        task.setDescription("Checks that JNI symbols exist in the native libraries");
+        task.dependsOn(sharedBinary.getTasks().getLink());
+        task.getInputs().file(sharedBinary.getSharedLibraryFile());
+        for (String j : jniComponent.getJniHeaderLocations().values()) {
+          task.getInputs().dir(j);
         }
+        task.getOutputs().file(task.foundSymbols);
+        task.binaryToCheck = sharedBinary;
+        task.jniComponent = jniComponent;
+        task.foundSymbols.set(project.getLayout().getBuildDirectory().file("jnisymbols/" + projName + "/symbols.txt"));
+      });
+      binary.checkedBy(tasks.get(checkTaskName));
+    }
 
-        private void setupCheckTasks(NativeBinarySpec binary, ModelMap<Task> tasks, JniNativeLibrarySpec jniComponent, Project project) {
-            if (!binary.isBuildable()) {
-                return;
-            }
-            if (!(binary instanceof SharedLibraryBinarySpec)) {
-                return;
-            }
-            SharedLibraryBinarySpec sharedBinary = (SharedLibraryBinarySpec) binary;
+    @Finalize
+    void getPlatformToolChains(NativeToolChainRegistry toolChains, ExtensionContainer extCont,
+        ServiceRegistry serviceRegistry) {
+      GradleJniConfiguration ext = extCont.getByType(GradleJniConfiguration.class);
+      ext.vsLocator = serviceRegistry.get(VisualStudioLocator.class);
+      for (NativeToolChain tc : toolChains) {
+        if (tc instanceof VisualCpp) {
+          VisualCpp vtc = (VisualCpp) tc;
+          vtc.eachPlatform(t -> {
+            ext.visualCppPlatforms.add(t);
+          });
+        } else if (tc instanceof GccCompatibleToolChain) {
+          GccCompatibleToolChain gtc = (GccCompatibleToolChain) tc;
+          gtc.eachPlatform(t -> {
+            ext.gccLikePlatforms.add(t);
+          });
+        }
+      }
+    }
 
-            String input = binary.getBuildTask().getName();
-            String projName = input.substring(0, 1).toUpperCase() + input.substring(1);
-            String checkTaskName = "check" + projName + "JniSymbols";
-            tasks.create(checkTaskName, JniSymbolCheck.class, task -> {
-                task.setGroup("Build");
-                task.setDescription("Checks that JNI symbols exist in the native libraries");
-                task.dependsOn(sharedBinary.getTasks().getLink());
-                task.getInputs().file(sharedBinary.getSharedLibraryFile());
-                for (String j : jniComponent.getJniHeaderLocations().values()) {
-                    task.getInputs().dir(j);
-                }
-                task.getOutputs().file(task.foundSymbols);
-                task.binaryToCheck = sharedBinary;
-                task.jniComponent = jniComponent;
-                task.foundSymbols.set(project.getLayout().getBuildDirectory().file("jnisymbols/" + projName + "/symbols.txt"));
+    @Mutate
+    void addJniDependencies(ModelMap<Task> tasks, ComponentSpecContainer components, ProjectLayout projectLayout,
+        NativeToolChainRegistry toolChains) {
+
+      Project project = (Project) projectLayout.getProjectIdentifier();
+      for (ComponentSpec oComponent : components) {
+        if (oComponent instanceof JniNativeLibrarySpec) {
+          JniNativeLibrarySpec component = (JniNativeLibrarySpec) oComponent;
+          for (BinarySpec oBinary : component.getBinaries()) {
+            if (!oBinary.isBuildable()) {
+              continue;
+            }
+            NativeBinarySpec binary = (NativeBinarySpec) oBinary;
+            binary.getTasks().withType(AbstractNativeSourceCompileTask.class, it -> {
+              it.dependsOn(component.getJavaCompileTasks().toArray());
             });
-            binary.checkedBy(tasks.get(checkTaskName));
-        }
 
-        @Finalize
-        void getPlatformToolChains(NativeToolChainRegistry toolChains, ExtensionContainer extCont, ServiceRegistry serviceRegistry) {
-            GradleJniConfiguration ext = extCont.getByType(GradleJniConfiguration.class);
-            ext.vsLocator = serviceRegistry.get(VisualStudioLocator.class);
-            for (NativeToolChain tc : toolChains) {
-                if (tc instanceof VisualCpp) {
-                    VisualCpp vtc = (VisualCpp) tc;
-                    vtc.eachPlatform(t -> {
-                        ext.visualCppPlatforms.add(t);
-                    });
-                } else if (tc instanceof GccCompatibleToolChain) {
-                    GccCompatibleToolChain gtc = (GccCompatibleToolChain) tc;
-                    gtc.eachPlatform(t -> {
-                        ext.gccLikePlatforms.add(t);
-                    });
-                }
+            List<String> jniFiles = new ArrayList<>();
+
+            boolean cross = false;
+
+            if (component.getEnableCheckTask()) {
+              setupCheckTasks(binary, tasks, component, project);
             }
-        }
 
-        @Mutate
-        void addJniDependencies(ModelMap<Task> tasks, ComponentSpecContainer components, ProjectLayout projectLayout, NativeToolChainRegistry toolChains) {
-
-            Project project = (Project) projectLayout.getProjectIdentifier();
-            for (ComponentSpec oComponent : components) {
-                if (oComponent instanceof JniNativeLibrarySpec) {
-                    JniNativeLibrarySpec component = (JniNativeLibrarySpec) oComponent;
-                    for (BinarySpec oBinary : component.getBinaries()) {
-                        if (!oBinary.isBuildable()) {
-                            continue;
-                        }
-                        NativeBinarySpec binary = (NativeBinarySpec) oBinary;
-                        binary.getTasks().withType(AbstractNativeSourceCompileTask.class, it -> {
-                            it.dependsOn(component.getJavaCompileTasks().toArray());
-                        });
-
-                        List<String> jniFiles = new ArrayList<>();
-
-                        boolean cross = false;
-
-                        if (component.getEnableCheckTask()) {
-                            setupCheckTasks(binary, tasks, component, project);
-                        }
-
-                        for (JniCrossCompileOptions config : component.getJniCrossCompileOptions()) {
-                            if (binary.getTargetPlatform().getArchitecture().getName() == config.architecture
-                                    && binary.getTargetPlatform().getOperatingSystem().getName() == config.operatingSystem) {
-                                cross = true;
-                                jniFiles.addAll(config.jniHeaderLocations);
-                                break;
-                            }
-                        }
-
-                        if (!cross) {
-                            String base = org.gradle.internal.jvm.Jvm.current().getJavaHome().toString() + "/include";
-
-                            jniFiles.add(base);
-                            if (binary.getTargetPlatform().getOperatingSystem().isMacOsX()) {
-                                jniFiles.add(base.concat("/darwin").toString());
-                            } else if (binary.getTargetPlatform().getOperatingSystem().isLinux()) {
-                                jniFiles.add(base.concat("/linux").toString());
-                            } else if (binary.getTargetPlatform().getOperatingSystem().isWindows()) {
-                                jniFiles.add(base.concat("/win32").toString());
-                            } else if (binary.getTargetPlatform().getOperatingSystem().isFreeBSD()) {
-                                jniFiles.add(base.concat("/freebsd").toString());
-                            } else if (project.file(base.concat("/darwin")).exists()) {
-                                // As of Gradle 2.8, targetPlatform.operatingSystem.macOsX returns false
-                                // on El Capitan. We therefore manually test for the darwin folder and include it
-                                // if it exists
-                                jniFiles.add(base.concat("/darwin").toString());
-                            }
-                        }
-
-                        binary.lib(new JniSystemDependencySet(jniFiles, project));
-
-                        binary.lib(new JniSourceDependencySet(component.getJniHeaderLocations().values(), project));
-                    }
-                }
+            for (JniCrossCompileOptions config : component.getJniCrossCompileOptions()) {
+              if (binary.getTargetPlatform().getArchitecture().getName() == config.architecture
+                  && binary.getTargetPlatform().getOperatingSystem().getName() == config.operatingSystem) {
+                cross = true;
+                jniFiles.addAll(config.jniHeaderLocations);
+                break;
+              }
             }
-        }
 
-        @Validate
-        void createJniTasks(ComponentSpecContainer components, ProjectLayout projectLayout) {
-            Project project = (Project) projectLayout.getProjectIdentifier();
-            for (ComponentSpec oComponent : components) {
-                if (oComponent instanceof JniNativeLibrarySpec) {
-                    JniNativeLibrarySpec component = (JniNativeLibrarySpec) oComponent;
+            if (!cross) {
+              String base = org.gradle.internal.jvm.Jvm.current().getJavaHome().toString() + "/include";
 
-                    assert !component.getJavaCompileTasks().isEmpty();
-
-                    for (JavaCompile compileTask : component.getJavaCompileTasks()) {
-                        String jniHeaderLocation = project.getBuildDir().toString() + "/jniinclude/"
-                                + compileTask.getName();
-                        compileTask.getOutputs().dir(jniHeaderLocation);
-                        component.getJniHeaderLocations().put(compileTask, jniHeaderLocation);
-                        List<String> args = compileTask.getOptions().getCompilerArgs();
-                        args.add("-h");
-                        args.add(jniHeaderLocation);
-                    }
-                }
+              jniFiles.add(base);
+              if (binary.getTargetPlatform().getOperatingSystem().isMacOsX()) {
+                jniFiles.add(base.concat("/darwin").toString());
+              } else if (binary.getTargetPlatform().getOperatingSystem().isLinux()) {
+                jniFiles.add(base.concat("/linux").toString());
+              } else if (binary.getTargetPlatform().getOperatingSystem().isWindows()) {
+                jniFiles.add(base.concat("/win32").toString());
+              } else if (binary.getTargetPlatform().getOperatingSystem().isFreeBSD()) {
+                jniFiles.add(base.concat("/freebsd").toString());
+              } else if (project.file(base.concat("/darwin")).exists()) {
+                // As of Gradle 2.8, targetPlatform.operatingSystem.macOsX returns false
+                // on El Capitan. We therefore manually test for the darwin folder and include
+                // it
+                // if it exists
+                jniFiles.add(base.concat("/darwin").toString());
+              }
             }
+
+            binary.lib(new JniSystemDependencySet(jniFiles, project));
+
+            binary.lib(new JniSourceDependencySet(component.getJniHeaderLocations().values(), project));
+          }
         }
+      }
     }
+
+    @Validate
+    void createJniTasks(ComponentSpecContainer components, ProjectLayout projectLayout) {
+      Project project = (Project) projectLayout.getProjectIdentifier();
+      for (ComponentSpec oComponent : components) {
+        if (oComponent instanceof JniNativeLibrarySpec) {
+          JniNativeLibrarySpec component = (JniNativeLibrarySpec) oComponent;
+
+          assert !component.getJavaCompileTasks().isEmpty();
+
+          for (JavaCompile compileTask : component.getJavaCompileTasks()) {
+            String jniHeaderLocation = project.getBuildDir().toString() + "/jniinclude/" + compileTask.getName();
+            compileTask.getOutputs().dir(jniHeaderLocation);
+            component.getJniHeaderLocations().put(compileTask, jniHeaderLocation);
+            List<String> args = compileTask.getOptions().getCompilerArgs();
+            args.add("-h");
+            args.add(jniHeaderLocation);
+          }
+        }
+      }
+    }
+  }
 }
