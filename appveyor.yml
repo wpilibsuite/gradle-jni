@@ -1,0 +1,17 @@
+version: '{branch}-{build}'
+pull_requests:
+  do_not_increment_build_number: true
+branches:
+  only:
+  - master
+skip_branch_with_pr: true
+image: Visual Studio 2017
+install:
+- ps: ./gradlew clean --no-daemon
+cache: C:\Users\appveyor\.gradle
+build_script:
+- ps: ./gradlew build --continue --no-daemon
+test: off
+artifacts:
+- path: '**/libs/*'
+  name: Jars
