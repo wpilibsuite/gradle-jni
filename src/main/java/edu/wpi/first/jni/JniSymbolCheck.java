@@ -159,6 +159,9 @@ public class JniSymbolCheck extends DefaultTask {
                 .forPlatform((NativePlatformInternal) binaryToCheck.getTargetPlatform());
             File cppPath = vscpp.getCompilerExecutable();
             File cppDir = new File(cppPath.getParentFile().getParentFile().toString(), "x64");
+            if (cppPath.toString().contains("Microsoft Visual Studio 14.0")) {
+              cppDir = new File(cppPath.getParentFile().getParentFile().toString(), "amd64");
+            }
 
             File dumpbinDir = new File(cppDir, "dumpbin.exe");
             handleWindowsSymbolCheck(dumpbinDir);
