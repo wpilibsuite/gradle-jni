@@ -7,10 +7,10 @@ branches:
 skip_branch_with_pr: true
 image: Visual Studio 2017
 install:
-- ps: ./gradlew clean --no-daemon
+- ps: ./gradlew clean -PjenkinsBuild --no-daemon
 cache: C:\Users\appveyor\.gradle
 build_script:
-- ps: ./gradlew build --continue --no-daemon
+- ps: ./gradlew build -PjenkinsBuild --continue --no-daemon
 test: off
 artifacts:
 - path: '**/libs/*'
