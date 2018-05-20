@@ -10,13 +10,11 @@ class GradleJni implements Plugin<Project> {
       project.getTasks().create("extractEmbeddedJni", ExtractJniFilesTask.class);
     }
 
-    if(project.getPlugins().hasPlugin(ComponentModelBasePlugin.class)) {
+    project.getPlugins().withType(ComponentModelBasePlugin.class, c -> {
       project.getExtensions().getExtraProperties().set("JniNativeLibrarySpec", JniNativeLibrarySpec.class);
       project.getExtensions().getExtraProperties().set("JniCrossCompileOptions", new CreateJniCrossCompileOptions());
       project.getExtensions().create("gradleJniConfiguration", GradleJniConfiguration.class);
       project.getPluginManager().apply(JniRules.class);
-    }
-
-
+    });
   }
 }
