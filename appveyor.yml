@@ -7,10 +7,22 @@ branches:
 skip_branch_with_pr: true
 image: Visual Studio 2017
 install:
-- ps: ./gradlew clean -PjenkinsBuild --no-daemon
+- ps: >-
+    If (Test-Path Env:APPVEYOR_REPO_TAG_NAME) {
+        ./gradlew clean -PjenkinsBuild -PreleaseType=OFFICIAL --continue --no-daemon
+    } Else {
+        ./gradlew clean -PjenkinsBuild --continue --no-daemon
+    }
+
 cache: C:\Users\appveyor\.gradle
 build_script:
-- ps: ./gradlew build -PjenkinsBuild --continue --no-daemon
+- ps: >-
+    If (Test-Path Env:APPVEYOR_REPO_TAG_NAME) {
+        ./gradlew build -PjenkinsBuild -PreleaseType=OFFICIAL --continue --no-daemon
+    } Else {
+        ./gradlew build -PjenkinsBuild --continue --no-daemon
+    }
+
 test: off
 artifacts:
 - path: '**/libs/*'
