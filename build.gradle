@@ -24,6 +24,10 @@ if (pubVersion == '') {
     pubVersion = '0.0.1-unknown'
 }
 
+if (project.hasProperty('localPublish')) {
+    pubVersion = '424242.0.0-local'
+}
+
 group 'edu.wpi.first'
 version pubVersion
 
