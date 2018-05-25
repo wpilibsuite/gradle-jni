@@ -34,3 +34,13 @@ deploy:
   artifact: /.*\.*/
   on:
     appveyor_repo_tag: true
+
+environment:
+  publish_key:
+    secure: UGuUcPX9W6daDySgBpeip3sK9BgS2CFBd8UEaon92DmAMsQf5QaYv+B6Ctn0JxlQ
+  publish_secret:
+    secure: Xncoe1fJg66+9tkZa367O1yKhO/3POjad0mY3oXrDzvMzYKPSgt8KVBnQ7wOB198
+deploy_script:
+- cmd: >-
+
+    if %APPVEYOR_REPO_TAG% equ true if %APPVEYOR_REPO_BRANCH% equ master gradlew.bat publishPlugin -PjenkinsBuild -PreleaseType=OFFICIAL -Pgradle.publish.key=%publish_key% -Pgradle.publish.secret=%publish_secret% --no-daemon
