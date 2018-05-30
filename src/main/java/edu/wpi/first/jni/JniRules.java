@@ -173,6 +173,9 @@ public class JniRules extends RuleSource {
           List<String> args = compileTask.getOptions().getCompilerArgs();
           args.add("-h");
           args.add(jniHeaderLocation);
+          compileTask.doFirst(t -> {
+            project.delete(jniHeaderLocation);
+          });
         }
       }
     }
