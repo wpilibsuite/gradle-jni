@@ -7,7 +7,7 @@ import org.gradle.language.base.plugins.ComponentModelBasePlugin;
 class GradleJni implements Plugin<Project> {
   public void apply(Project project) {
     if (project.equals(project.getRootProject())) {
-      project.getTasks().create("extractEmbeddedJni", ExtractJniFilesTask.class);
+      project.getTasks().register("extractEmbeddedJni", ExtractJniFilesTask.class);
     }
 
     project.getPlugins().withType(ComponentModelBasePlugin.class, c -> {

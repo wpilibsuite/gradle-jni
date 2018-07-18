@@ -6,6 +6,7 @@ import java.util.List;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.plugins.ExtensionContainer;
+import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.language.base.internal.ProjectLayout;
@@ -115,12 +116,12 @@ public class JniRules extends RuleSource {
                 || binary.getTargetPlatform().getName().equals(config.name)) {
               cross = true;
               if (config.jniHeaderLocations == null) {
-                ExtractJniFilesTask extractTask = (ExtractJniFilesTask) project.getRootProject().getTasks()
-                    .getByName("extractEmbeddedJni");
+                TaskProvider<Task> extractTask = project.getRootProject().getTasks()
+                    .named("extractEmbeddedJni");
                 binary.getTasks().withType(AbstractNativeSourceCompileTask.class, it -> {
                   it.dependsOn(extractTask);
                 });
-                binary.lib(new JniExtractedDependencySet(extractTask.outputDirectory, project));
+                binary.lib(new JniExtractedDependencySet(extractTask, project));
               } else {
                 jniFiles.addAll(config.jniHeaderLocations);
                 binary.lib(new JniSystemDependencySet(jniFiles, project));
