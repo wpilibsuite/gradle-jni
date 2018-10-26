@@ -77,7 +77,7 @@ public class JniSymbolCheck extends DefaultTask {
     String dumpBinSymbols = dumpbinOutput.toString();
 
     for (String symbol : symbolList) {
-      if (!dumpBinSymbols.contains(symbol + " =")) {
+      if (!dumpBinSymbols.contains(symbol + " =") && !dumpBinSymbols.contains(symbol + "@")) {
         missingSymbols.add(symbol);
       }
     }

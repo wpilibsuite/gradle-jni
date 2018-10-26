@@ -4,7 +4,6 @@ import java.io.File;
 
 import org.gradle.api.Project;
 import org.gradle.api.Task;
-import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.nativeplatform.NativeDependencySet;
