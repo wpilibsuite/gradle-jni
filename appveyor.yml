@@ -37,9 +37,9 @@ deploy:
 
 environment:
   publish_key:
-    secure: UGuUcPX9W6daDySgBpeip3sK9BgS2CFBd8UEaon92DmAMsQf5QaYv+B6Ctn0JxlQ
+    secure: wVCzRBWEMo4SicMOirzPjoJwm+nSQrj3unIimWFCU1hW3yrKn1fd2RME2rP6PbUo
   publish_secret:
-    secure: Xncoe1fJg66+9tkZa367O1yKhO/3POjad0mY3oXrDzvMzYKPSgt8KVBnQ7wOB198
+    secure: tG4G339EMZKHwPFfjGimWS/g8ypW/yHZufKvYhT5RrLw/fUzYfqeXXxvA4uprnfd
 deploy_script:
 - cmd: >-
 
