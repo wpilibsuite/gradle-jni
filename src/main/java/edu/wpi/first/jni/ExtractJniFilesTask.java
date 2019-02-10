@@ -6,16 +6,21 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import javax.inject.Inject;
+
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
 
 public class ExtractJniFilesTask extends DefaultTask {
   @OutputDirectory
-  public final DirectoryProperty outputDirectory = newOutputDirectory();
+  public final DirectoryProperty outputDirectory;
 
-  public ExtractJniFilesTask() {
+  @Inject
+  public ExtractJniFilesTask(ObjectFactory factory) {
+    outputDirectory = factory.directoryProperty();
     getOutputs().dir(outputDirectory);
     outputDirectory.set(getProject().getLayout().getBuildDirectory().dir("embeddedJniHeaders"));
     setGroup("JNI");

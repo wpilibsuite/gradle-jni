@@ -9,10 +9,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
+import javax.inject.Inject;
+
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
@@ -31,13 +34,18 @@ import org.gradle.platform.base.internal.toolchain.SearchResult;
 
 public class JniSymbolCheck extends DefaultTask {
   @OutputFile
-  public RegularFileProperty foundSymbols = newOutputFile();
+  public RegularFileProperty foundSymbols;
 
   @Input
   public SharedLibraryBinarySpec binaryToCheck;
 
   @Input
   public JniNativeLibrarySpec jniComponent;
+
+  @Inject
+  public JniSymbolCheck(ObjectFactory factory) {
+    foundSymbols = factory.fileProperty();
+  } 
 
   private List<String> getExpectedSymbols() {
     // Get expected symbols

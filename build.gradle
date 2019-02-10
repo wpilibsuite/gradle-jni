@@ -73,5 +73,5 @@ gradlePlugin {
 }
 
 wrapper {
-    gradleVersion = '4.9'
+    gradleVersion = '5.0'
 }

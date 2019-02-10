@@ -19,7 +19,6 @@ import org.gradle.model.Validate;
 import org.gradle.nativeplatform.NativeBinarySpec;
 import org.gradle.nativeplatform.SharedLibraryBinarySpec;
 import org.gradle.nativeplatform.toolchain.GccCompatibleToolChain;
-import org.gradle.nativeplatform.toolchain.NativeToolChain;
 import org.gradle.nativeplatform.toolchain.NativeToolChainRegistry;
 import org.gradle.nativeplatform.toolchain.VisualCpp;
 import org.gradle.nativeplatform.toolchain.internal.msvcpp.VisualStudioLocator;
@@ -66,11 +65,11 @@ public class JniRules extends RuleSource {
   }
 
   @Finalize
-  void getPlatformToolChains(NativeToolChainRegistry toolChains, ExtensionContainer extCont,
+  void getPlatformToolChainsJNI(NativeToolChainRegistry toolChains, ExtensionContainer extCont,
       ServiceRegistry serviceRegistry) {
     GradleJniConfiguration ext = extCont.getByType(GradleJniConfiguration.class);
     ext.vsLocator = serviceRegistry.get(VisualStudioLocator.class);
-    for (NativeToolChain tc : toolChains) {
+    toolChains.all(tc -> {
       if (tc instanceof VisualCpp) {
         VisualCpp vtc = (VisualCpp) tc;
         vtc.eachPlatform(t -> {
@@ -82,7 +81,7 @@ public class JniRules extends RuleSource {
           ext.gccLikePlatforms.add(t);
         });
       }
-    }
+    });
   }
 
   @Mutate
