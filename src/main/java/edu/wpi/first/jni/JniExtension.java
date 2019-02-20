@@ -24,6 +24,8 @@ import org.gradle.language.cpp.CppSharedLibrary;
 import org.gradle.language.cpp.internal.DefaultCppBinary;
 import org.gradle.nativeplatform.TargetMachine;
 import org.gradle.nativeplatform.TargetMachineFactory;
+import org.gradle.nativeplatform.tasks.ExtractSymbols;
+import org.gradle.nativeplatform.tasks.LinkSharedLibrary;
 import org.gradle.nativeplatform.toolchain.GccCompatibleToolChain;
 import org.gradle.nativeplatform.toolchain.GccPlatformToolChain;
 import org.gradle.nativeplatform.toolchain.NativeToolChain;
@@ -69,24 +71,38 @@ public class JniExtension {
         return;
 
       if (b instanceof CppSharedLibrary) {
-        String name = b.getName();
-        name = name.substring(0, 1).toUpperCase() + name.substring(1);
-        project.getTasks().register("check" + name + "JniSymbols", JniSymbolCheck.class, c -> {
-          c.jniComponent = this;
-          c.cppBinary = (CppSharedLibrary)b;
-        });
-
-        NativeToolChain tc = b.getToolChain();
-
-        if (tc instanceof GccCompatibleToolChain) {
-          GccCompatibleToolChain gtc = (GccCompatibleToolChain) tc;
-          gtc.eachPlatform(a -> {
-            gccToolChains.add(a);
+        String nme = b.getName();
+        String name = nme.substring(0, 1).toUpperCase() + nme.substring(1);
+        CppSharedLibrary bin = (CppSharedLibrary)b;
+        if (b.getTargetMachine().getOperatingSystemFamily().isWindows()) {
+          TaskProvider<WindowsExtractSymbols> extractSymbolsTask = project.getTasks().register("extract" + name + "Symbols", WindowsExtractSymbols.class, c -> {
+            LinkSharedLibrary linkTask = bin.getLinkTask().get();
+            c.getToolChain().set(linkTask.getToolChain());
+            c.getTargetPlatform().set(linkTask.getTargetPlatform());
+            c.getBinaryFile().set(linkTask.getLinkedFile());
+            c.getSymbolFile().set(project.file("build/symbols/" + name + "Symbols.txt"));
           });
-        } else if (tc instanceof VisualCpp) {
-          VisualCpp vctc = (VisualCpp) tc;
-          vctc.eachPlatform(a -> {
-            vsppToolChains.add(a);
+          project.getTasks().register("check" + name + "JniSymbols", JniSymbolCheck.class, c -> {
+            c.dependsOn(extractSymbolsTask);
+            c.isWindows().set(true);
+            c.getFoundSymbols().set(project.file("build/jnisymbols/" + name + "Symbols.txt"));
+            c.getSymbolFile().set(extractSymbolsTask.get().getSymbolFile());
+            c.getHeaderLocations().addAll(jniHeaderLocs);
+          });
+        } else {
+          TaskProvider<ExtractSymbols> extractSymbolsTask = project.getTasks().register("extract" + name + "Symbols", ExtractSymbols.class, c -> {
+            LinkSharedLibrary linkTask = bin.getLinkTask().get();
+            c.getToolChain().set(linkTask.getToolChain());
+            c.getTargetPlatform().set(linkTask.getTargetPlatform());
+            c.getBinaryFile().set(linkTask.getLinkedFile());
+            c.getSymbolFile().set(project.file("build/symbols/" + name + "Symbols.txt"));
+          });
+          project.getTasks().register("check" + name + "JniSymbols", JniSymbolCheck.class, c -> {
+            c.dependsOn(extractSymbolsTask);
+            c.isWindows().set(false);
+            c.getFoundSymbols().set(project.file("build/jnisymbols/" + name + "Symbols.txt"));
+            c.getSymbolFile().set(extractSymbolsTask.get().getSymbolFile());
+            c.getHeaderLocations().addAll(jniHeaderLocs);
           });
         }
       }
