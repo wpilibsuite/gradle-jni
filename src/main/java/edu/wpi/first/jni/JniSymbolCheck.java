@@ -13,13 +13,18 @@ import javax.inject.Inject;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
+import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.internal.os.OperatingSystem;
+import org.gradle.language.cpp.CppBinary;
+import org.gradle.language.cpp.CppLibrary;
+import org.gradle.language.cpp.CppSharedLibrary;
 import org.gradle.nativeplatform.SharedLibraryBinarySpec;
 import org.gradle.nativeplatform.platform.internal.NativePlatformInternal;
 import org.gradle.nativeplatform.toolchain.GccPlatformToolChain;
@@ -37,21 +42,23 @@ public class JniSymbolCheck extends DefaultTask {
   public RegularFileProperty foundSymbols;
 
   @Input
-  public SharedLibraryBinarySpec binaryToCheck;
+  public JniExtension jniComponent;
 
   @Input
-  public JniNativeLibrarySpec jniComponent;
+  public CppSharedLibrary cppBinary;
 
   @Inject
   public JniSymbolCheck(ObjectFactory factory) {
     foundSymbols = factory.fileProperty();
-  } 
+    setGroup("JNI");
+    setDescription("Checks that the JNI symbols exist in the native libraries");
+  }
 
   private List<String> getExpectedSymbols() {
     // Get expected symbols
     List<String> symbolList = new ArrayList<>();
-    for (String loc : jniComponent.getJniHeaderLocations().values()) {
-      FileTree tree = getProject().fileTree(loc);
+    for (DirectoryProperty loc : jniComponent.getJniHeaderLocations()) {
+      FileTree tree = getProject().fileTree(loc.get().getAsFile().toString());
       for (File file : tree) {
         try (Stream<String> stream = Files.lines(file.toPath())) {
           stream.map(s -> s.trim()).filter(s -> !s.isEmpty() && (s.startsWith("JNIEXPORT ") && s.contains("JNICALL")))
@@ -72,7 +79,7 @@ public class JniSymbolCheck extends DefaultTask {
 
     List<String> symbolList = getExpectedSymbols();
 
-    String library = binaryToCheck.getSharedLibraryFile().getAbsolutePath();
+    String library = cppBinary.getRuntimeFile().get().getAsFile().getAbsolutePath();
 
     ByteArrayOutputStream dumpbinOutput = new ByteArrayOutputStream();
     getProject().exec(exec -> {
@@ -114,7 +121,7 @@ public class JniSymbolCheck extends DefaultTask {
 
     List<String> symbolList = getExpectedSymbols();
 
-    String library = binaryToCheck.getSharedLibraryFile().getAbsolutePath();
+    String library = cppBinary.getRuntimeFile().get().getAsFile().getAbsolutePath();
 
     ByteArrayOutputStream nmOutput = new ByteArrayOutputStream();
     getProject().exec(exec -> {
@@ -151,8 +158,8 @@ public class JniSymbolCheck extends DefaultTask {
 
   @TaskAction
   public void checkSymbols() {
-    GradleJniConfiguration ext = getProject().getExtensions().getByType(GradleJniConfiguration.class);
     boolean found = false;
+    /*
 
     NativeToolChain toolChain = binaryToCheck.getToolChain();
 
@@ -208,5 +215,6 @@ public class JniSymbolCheck extends DefaultTask {
     if (!found) {
       throw new GradleException("Failed to find a toolchain matching the binary to check");
     }
+    */
   }
 }
