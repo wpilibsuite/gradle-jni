@@ -38,7 +38,7 @@ import org.gradle.nativeplatform.toolchain.internal.NativeToolChainInternal;
 import org.gradle.nativeplatform.toolchain.internal.ToolType;
 import org.gradle.process.internal.ExecActionFactory;
 
-public class WindowsExtractSymbols extends DefaultTask {
+public class UnixExtractSymbols extends DefaultTask {
   private final RegularFileProperty binaryFile;
   private final RegularFileProperty symbolFile;
   private final Property<NativePlatform> targetPlatform;
@@ -49,7 +49,7 @@ public class WindowsExtractSymbols extends DefaultTask {
   private final WorkerLeaseService workerLeaseService;
 
   @Inject
-  public WindowsExtractSymbols(ExecActionFactory execActionFactory, BuildOperationExecutor buildOperationExecutor, WorkerLeaseService workerLeaseService) {
+  public UnixExtractSymbols(ExecActionFactory execActionFactory, BuildOperationExecutor buildOperationExecutor, WorkerLeaseService workerLeaseService) {
     this.execActionFactory = execActionFactory;
     ObjectFactory objectFactory = getProject().getObjects();
 
@@ -115,7 +115,7 @@ public class WindowsExtractSymbols extends DefaultTask {
     }
 
     private Compiler<SymbolExtractorSpec> createCompiler() {
-        File cppPath = ((NativeToolChainInternal)toolChain.get()).select((NativePlatformInternal)targetPlatform.get()).locateTool(ToolType.CPP_COMPILER).getTool();
+        File cppPath = ((NativeToolChainInternal)toolChain.get()).select((NativePlatformInternal)targetPlatform.get()).locateTool(ToolType.SYMBOL_EXTRACTOR).getTool();
         File cppDir = new File(cppPath.getParentFile().getParentFile().toString(), "x64");
         if (cppPath.toString().contains("Microsoft Visual Studio 14.0")) {
           cppDir = new File(cppPath.getParentFile().getParentFile().toString(), "amd64");

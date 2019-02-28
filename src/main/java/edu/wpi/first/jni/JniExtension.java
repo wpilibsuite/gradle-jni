@@ -24,12 +24,8 @@ import org.gradle.language.cpp.CppSharedLibrary;
 import org.gradle.language.cpp.internal.DefaultCppBinary;
 import org.gradle.nativeplatform.TargetMachine;
 import org.gradle.nativeplatform.TargetMachineFactory;
-import org.gradle.nativeplatform.tasks.ExtractSymbols;
 import org.gradle.nativeplatform.tasks.LinkSharedLibrary;
-import org.gradle.nativeplatform.toolchain.GccCompatibleToolChain;
 import org.gradle.nativeplatform.toolchain.GccPlatformToolChain;
-import org.gradle.nativeplatform.toolchain.NativeToolChain;
-import org.gradle.nativeplatform.toolchain.VisualCpp;
 import org.gradle.nativeplatform.toolchain.VisualCppPlatformToolChain;
 import org.gradle.process.JavaForkOptions;
 
@@ -90,7 +86,7 @@ public class JniExtension {
             c.getHeaderLocations().addAll(jniHeaderLocs);
           });
         } else {
-          TaskProvider<ExtractSymbols> extractSymbolsTask = project.getTasks().register("extract" + name + "Symbols", ExtractSymbols.class, c -> {
+          TaskProvider<UnixExtractSymbols> extractSymbolsTask = project.getTasks().register("extract" + name + "Symbols", UnixExtractSymbols.class, c -> {
             LinkSharedLibrary linkTask = bin.getLinkTask().get();
             c.getToolChain().set(linkTask.getToolChain());
             c.getTargetPlatform().set(linkTask.getTargetPlatform());
