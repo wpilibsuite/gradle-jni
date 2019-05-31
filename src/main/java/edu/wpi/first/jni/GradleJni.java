@@ -11,6 +11,7 @@ class GradleJni implements Plugin<Project> {
     }
 
     project.getPlugins().withType(ComponentModelBasePlugin.class, c -> {
+      project.getExtensions().getExtraProperties().set("JniNativeExecutableSpec", JniNativeExecutableSpec.class);
       project.getExtensions().getExtraProperties().set("JniNativeLibrarySpec", JniNativeLibrarySpec.class);
       project.getExtensions().getExtraProperties().set("JniCrossCompileOptions", new CreateJniCrossCompileOptions());
       project.getExtensions().create("gradleJniConfiguration", GradleJniConfiguration.class);

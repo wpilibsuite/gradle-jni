@@ -4,6 +4,6 @@ import org.gradle.api.tasks.compile.JavaCompile;
 
 import java.util.Map;
 
-public interface JniNativeLibraryInternal {
+public interface JniNativeSpecInternal {
   void setJniHeaderLocations(Map<JavaCompile, String> location);
 }

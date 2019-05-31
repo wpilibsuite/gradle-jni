@@ -30,9 +30,15 @@ import org.gradle.platform.base.TypeBuilder;
 
 public class JniRules extends RuleSource {
   @ComponentType
-  void registerJni(TypeBuilder<JniNativeLibrarySpec> builder) {
+  void registerJniLibrary(TypeBuilder<JniNativeLibrarySpec> builder) {
     builder.defaultImplementation(DefaultJniNativeLibrary.class);
-    builder.internalView(JniNativeLibraryInternal.class);
+    builder.internalView(JniNativeSpecInternal.class);
+  }
+
+  @ComponentType
+  void registerJniExecutable(TypeBuilder<JniNativeExecutableSpec> builder) {
+    builder.defaultImplementation(DefaultJniNativeExecutable.class);
+    builder.internalView(JniNativeSpecInternal.class);
   }
 
   private void setupCheckTasks(NativeBinarySpec binary, ModelMap<Task> tasks, JniNativeLibrarySpec jniComponent,
@@ -90,8 +96,8 @@ public class JniRules extends RuleSource {
 
     Project project = (Project) projectLayout.getProjectIdentifier();
     for (ComponentSpec oComponent : components) {
-      if (oComponent instanceof JniNativeLibrarySpec) {
-        JniNativeLibrarySpec component = (JniNativeLibrarySpec) oComponent;
+      if (oComponent instanceof JniNativeBaseSpec) {
+        JniNativeBaseSpec component = (JniNativeBaseSpec) oComponent;
         for (BinarySpec oBinary : component.getBinaries()) {
           if (!oBinary.isBuildable()) {
             continue;
@@ -105,8 +111,8 @@ public class JniRules extends RuleSource {
 
           boolean cross = false;
 
-          if (component.getEnableCheckTask()) {
-            setupCheckTasks(binary, tasks, component, project);
+          if (component.getEnableCheckTask() && component instanceof JniNativeLibrarySpec) {
+            setupCheckTasks(binary, tasks, (JniNativeLibrarySpec)component, project);
           }
 
           for (JniCrossCompileOptions config : component.getJniCrossCompileOptions()) {
@@ -161,8 +167,8 @@ public class JniRules extends RuleSource {
   void createJniTasks(ComponentSpecContainer components, ProjectLayout projectLayout) {
     Project project = (Project) projectLayout.getProjectIdentifier();
     for (ComponentSpec oComponent : components) {
-      if (oComponent instanceof JniNativeLibrarySpec) {
-        JniNativeLibrarySpec component = (JniNativeLibrarySpec) oComponent;
+      if (oComponent instanceof JniNativeBaseSpec) {
+        JniNativeBaseSpec component = (JniNativeBaseSpec) oComponent;
 
         assert !component.getJavaCompileTasks().isEmpty();
 
