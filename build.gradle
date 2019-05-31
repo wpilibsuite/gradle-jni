@@ -1,52 +1,19 @@
 plugins {
     id 'java-gradle-plugin'
     id 'maven-publish'
-    id "edu.wpi.first.wpilib.versioning.WPILibVersioningPlugin" version "2.2"
-    id "com.gradle.plugin-publish" version "0.9.10"
-}
-
-// Ensure that the WPILibVersioningPlugin is setup by setting the release type, if releaseType wasn't
-// already specified on the command line
-if (!hasProperty('releaseType')) {
-    WPILibVersion {
-        releaseType = 'dev'
-    }
-}
-
-ext.pubVersion = ''
-if (project.hasProperty("publishVersion")) {
-    pubVersion = project.publishVersion
-} else {
-    pubVersion = WPILibVersion.version
-}
-
-if (pubVersion == '') {
-    pubVersion = '0.0.1-unknown'
-}
-
-if (project.hasProperty('localPublish')) {
-    pubVersion = '424242.0.0-local'
+    id "com.gradle.plugin-publish" version "0.10.1"
 }
 
 group 'edu.wpi.first'
-version pubVersion
+version '0.5.0'
+
+if (project.hasProperty('publishVersion')) {
+    version = project.publishVersion
+}
 
 compileJava {
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
-}
-
-publishing {
-    publications {
-        plugin(MavenPublication) {
-            artifact(jar) {
-                if (project.hasProperty('localPublish')) {
-                    classifier null
-                    groupId 'gradle.plugin.' + group
-                }
-            }
-        }
-    }
 }
 
 pluginBundle {
@@ -54,24 +21,18 @@ pluginBundle {
     vcsUrl = 'https://github.com/wpilibsuite/gradle-jni'
     description = 'This plugin provides easy to use JNI support for gradle.'
     tags = ['groovy', 'jni', 'utils', 'maven', 'frc', 'wpilib']
-
-    plugins {
-        GradleJni {
-            id = 'edu.wpi.first.GradleJni'
-            displayName = 'Gradle JNI'
-        }
-    }
 }
 
 gradlePlugin {
     plugins {
         GradleJni {
             id = 'edu.wpi.first.GradleJni'
+            displayName = 'GradleJni'
             implementationClass = 'edu.wpi.first.jni.GradleJni'
         }
     }
 }
 
 wrapper {
-    gradleVersion = '5.0'
+    gradleVersion = '5.4.1'
 }
