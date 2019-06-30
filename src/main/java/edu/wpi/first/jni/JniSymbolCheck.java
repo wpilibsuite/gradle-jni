@@ -1,5 +1,9 @@
 package edu.wpi.first.jni;
 
+import static edu.wpi.first.jni.net.fornwall.jelf.ElfSection.SHT_DYNSYM;
+import static edu.wpi.first.jni.net.fornwall.jelf.ElfSymbol.BINDING_GLOBAL;
+import static edu.wpi.first.jni.net.fornwall.jelf.ElfSymbol.STT_FUNC;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileWriter;
@@ -19,18 +23,19 @@ import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
-import org.gradle.internal.os.OperatingSystem;
 import org.gradle.nativeplatform.SharedLibraryBinarySpec;
+import org.gradle.nativeplatform.platform.OperatingSystem;
 import org.gradle.nativeplatform.platform.internal.NativePlatformInternal;
-import org.gradle.nativeplatform.toolchain.GccPlatformToolChain;
 import org.gradle.nativeplatform.toolchain.NativeToolChain;
 import org.gradle.nativeplatform.toolchain.VisualCpp;
 import org.gradle.nativeplatform.toolchain.VisualCppPlatformToolChain;
-import org.gradle.nativeplatform.toolchain.internal.ToolType;
 import org.gradle.nativeplatform.toolchain.internal.msvcpp.VisualStudioInstall;
-import org.gradle.nativeplatform.toolchain.internal.tools.CommandLineToolSearchResult;
-import org.gradle.nativeplatform.toolchain.internal.tools.ToolSearchPath;
 import org.gradle.platform.base.internal.toolchain.SearchResult;
+
+import edu.wpi.first.jni.net.fornwall.jelf.ElfException;
+import edu.wpi.first.jni.net.fornwall.jelf.ElfFile;
+import edu.wpi.first.jni.net.fornwall.jelf.ElfSection;
+import edu.wpi.first.jni.net.fornwall.jelf.ElfSymbol;
 
 public class JniSymbolCheck extends DefaultTask {
   @OutputFile
@@ -45,7 +50,7 @@ public class JniSymbolCheck extends DefaultTask {
   @Inject
   public JniSymbolCheck(ObjectFactory factory) {
     foundSymbols = factory.fileProperty();
-  } 
+  }
 
   private List<String> getExpectedSymbols() {
     // Get expected symbols
@@ -108,7 +113,60 @@ public class JniSymbolCheck extends DefaultTask {
     }
   }
 
-  private void handleUnixSymbolCheck(File nmLoc) {
+  private void handleElfSymbolCheck() throws ElfException, IOException {
+    File symbolFile = foundSymbols.getAsFile().get();
+    symbolFile.getParentFile().mkdirs();
+
+    List<String> symbolList = getExpectedSymbols();
+
+    File library = binaryToCheck.getSharedLibraryFile();
+
+    ElfFile elfFile = ElfFile.fromFile(library);
+
+    List<String> symbols = new ArrayList<>();
+
+    for (int i = 0; i < elfFile.num_sh; i++) {
+      ElfSection sh = elfFile.getSection(i);
+      int numSymbols = sh.getNumberOfSymbols();
+      if (sh.type != SHT_DYNSYM) {
+        continue;
+      }
+      for (int j = 0; j < numSymbols; j++) {
+        ElfSymbol sym = sh.getELFSymbol(j);
+        if (sym.getType() == STT_FUNC && sym.getBinding() == BINDING_GLOBAL) {
+          symbols.add(sym.getName());
+        }
+
+      }
+    }
+
+    List<String> missingSymbols = new ArrayList<>();
+
+    for (String symbol : symbolList) {
+      if (!symbols.contains(symbol)) {
+        missingSymbols.add(symbol);
+      }
+    }
+
+    if (!missingSymbols.isEmpty()) {
+      StringBuilder missingString = new StringBuilder();
+      for (String symbol : missingSymbols) {
+        missingString.append(symbol);
+        missingString.append('\n');
+      }
+      throw new GradleException("Found a definition that does not have a matching symbol " + missingString.toString());
+    }
+    try (FileWriter writer = new FileWriter(symbolFile)) {
+      for (String str : symbolList) {
+        writer.write(str);
+        writer.write('\n');
+      }
+    } catch (IOException ex) {
+      System.out.println(ex);
+    }
+  }
+
+  private void handleMacSymbolCheck() {
     File symbolFile = foundSymbols.getAsFile().get();
     symbolFile.getParentFile().mkdirs();
 
@@ -118,7 +176,7 @@ public class JniSymbolCheck extends DefaultTask {
 
     ByteArrayOutputStream nmOutput = new ByteArrayOutputStream();
     getProject().exec(exec -> {
-      exec.commandLine(nmLoc, library);
+      exec.commandLine("nm", library);
       exec.setStandardOutput(nmOutput);
     });
 
@@ -156,57 +214,46 @@ public class JniSymbolCheck extends DefaultTask {
 
     NativeToolChain toolChain = binaryToCheck.getToolChain();
 
-    for (VisualCppPlatformToolChain msvcPlat : ext.visualCppPlatforms) {
-      if (msvcPlat.getPlatform().equals(binaryToCheck.getTargetPlatform())) {
-        if (toolChain instanceof VisualCpp) {
-          VisualCpp vcpp = (VisualCpp) toolChain;
-          SearchResult<VisualStudioInstall> vsiSearch = ext.vsLocator.locateComponent(vcpp.getInstallDir());
-          if (vsiSearch.isAvailable()) {
-            VisualStudioInstall vsi = vsiSearch.getComponent();
-            org.gradle.nativeplatform.toolchain.internal.msvcpp.VisualCpp vscpp = vsi.getVisualCpp()
-                .forPlatform((NativePlatformInternal) binaryToCheck.getTargetPlatform());
-            File cppPath = vscpp.getCompilerExecutable();
-            File cppDir = new File(cppPath.getParentFile().getParentFile().toString(), "x64");
-            if (cppPath.toString().contains("Microsoft Visual Studio 14.0")) {
-              cppDir = new File(cppPath.getParentFile().getParentFile().toString(), "amd64");
-            }
+    OperatingSystem targetOs = binaryToCheck.getTargetPlatform().getOperatingSystem();
 
-            File dumpbinDir = new File(cppDir, "dumpbin.exe");
-            handleWindowsSymbolCheck(dumpbinDir);
-            found = true;
-            break;
+    if (binaryToCheck.getTargetPlatform().getOperatingSystem().isLinux()) {
+      try {
+        handleElfSymbolCheck();
+      } catch (ElfException | IOException e) {
+        throw new GradleException("Failed to parse elf file?", e);
+      }
+    } else if (targetOs.isMacOsX()) {
+      handleMacSymbolCheck();
+    } else if (targetOs.isWindows()) {
+      for (VisualCppPlatformToolChain msvcPlat : ext.visualCppPlatforms) {
+        if (msvcPlat.getPlatform().equals(binaryToCheck.getTargetPlatform())) {
+          if (toolChain instanceof VisualCpp) {
+            VisualCpp vcpp = (VisualCpp) toolChain;
+            SearchResult<VisualStudioInstall> vsiSearch = ext.vsLocator.locateComponent(vcpp.getInstallDir());
+            if (vsiSearch.isAvailable()) {
+              VisualStudioInstall vsi = vsiSearch.getComponent();
+              org.gradle.nativeplatform.toolchain.internal.msvcpp.VisualCpp vscpp = vsi.getVisualCpp()
+                  .forPlatform((NativePlatformInternal) binaryToCheck.getTargetPlatform());
+              File cppPath = vscpp.getCompilerExecutable();
+              File cppDir = new File(cppPath.getParentFile().getParentFile().toString(), "x64");
+              if (cppPath.toString().contains("Microsoft Visual Studio 14.0")) {
+                cppDir = new File(cppPath.getParentFile().getParentFile().toString(), "amd64");
+              }
+
+              File dumpbinDir = new File(cppDir, "dumpbin.exe");
+              handleWindowsSymbolCheck(dumpbinDir);
+              found = true;
+              break;
+            }
           }
         }
       }
-    }
 
-    if (!found) {
-      for (GccPlatformToolChain gccPlat : ext.gccLikePlatforms) {
-        if (gccPlat.getPlatform().equals(binaryToCheck.getTargetPlatform())) {
-
-          ToolSearchPath tsp = new ToolSearchPath(OperatingSystem.current());
-          CommandLineToolSearchResult cppSearch = tsp.locate(ToolType.CPP_COMPILER,
-              gccPlat.getCppCompiler().getExecutable());
-          if (cppSearch.isAvailable()) {
-            found = true;
-            File cppPath = cppSearch.getTool();
-            File cppDir = cppPath.getParentFile();
-            String exeName = cppPath.getName();
-            String prefix = "";
-            int index = exeName.lastIndexOf('-');
-            if (index != -1) {
-              prefix = exeName.substring(0, exeName.lastIndexOf('-') + 1);
-            }
-            File nmDir = new File(cppDir, prefix + "nm");
-            handleUnixSymbolCheck(nmDir);
-            break;
-          }
-        }
+      if (!found) {
+        throw new GradleException("Unable to find toolchain for platform " + toolChain);
       }
-    }
-
-    if (!found) {
-      throw new GradleException("Failed to find a toolchain matching the binary to check");
+    } else {
+      throw new GradleException("Platform " + targetOs.getName() + " Is not supported for JNI Symbol Checking");
     }
   }
 }
