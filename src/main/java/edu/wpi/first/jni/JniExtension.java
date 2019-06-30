@@ -14,6 +14,7 @@ import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.TaskProvider;
@@ -38,17 +39,17 @@ public class JniExtension {
   private String rootFolder;
   private Map<TargetMachine, String[]> includeMap = new HashMap<>();
 
-  private List<DirectoryProperty> jniHeaderLocs = new ArrayList<>();
-
   public Set<GccPlatformToolChain> gccToolChains = new HashSet<>();
   public Set<VisualCppPlatformToolChain> vsppToolChains = new HashSet<>();
+
+  private List<TaskProvider<GatherExpectedJniSymbols>> expectedSymbolsTasks = new ArrayList<>();
 
   private boolean javaAdded = false;
 
   private boolean checkSymbols = false;
 
   @Inject
-  public JniExtension(Project project, CppLibrary library, TaskProvider<ExtractJniFilesTask> extractTask) {
+  public JniExtension(Project project, CppLibrary library, TaskProvider<ExtractCrossJniHeaders> extractTask) {
     this.library = library;
 
     rootFolder = org.gradle.internal.jvm.Jvm.current().getJavaHome().toString() + "/include";
@@ -82,8 +83,12 @@ public class JniExtension {
             c.dependsOn(extractSymbolsTask);
             c.isWindows().set(true);
             c.getFoundSymbols().set(project.file("build/jnisymbols/" + name + "Symbols.txt"));
-            c.getSymbolFile().set(extractSymbolsTask.get().getSymbolFile());
-            c.getHeaderLocations().addAll(jniHeaderLocs);
+            c.getCompiledSymbols().set(extractSymbolsTask.get().getSymbolFile());
+            for (TaskProvider<GatherExpectedJniSymbols> gather : expectedSymbolsTasks) {
+              RegularFileProperty prop = project.getObjects().fileProperty();
+              prop.set(gather.get().getExpectedJniSymbols());
+              c.getExpectedSymbols().add(prop);
+            }
           });
         } else {
           TaskProvider<UnixExtractSymbols> extractSymbolsTask = project.getTasks().register("extract" + name + "Symbols", UnixExtractSymbols.class, c -> {
@@ -97,8 +102,12 @@ public class JniExtension {
             c.dependsOn(extractSymbolsTask);
             c.isWindows().set(false);
             c.getFoundSymbols().set(project.file("build/jnisymbols/" + name + "Symbols.txt"));
-            c.getSymbolFile().set(extractSymbolsTask.get().getSymbolFile());
-            c.getHeaderLocations().addAll(jniHeaderLocs);
+            c.getCompiledSymbols().set(extractSymbolsTask.get().getSymbolFile());
+            for (TaskProvider<GatherExpectedJniSymbols> gather : expectedSymbolsTasks) {
+              RegularFileProperty prop = project.getObjects().fileProperty();
+              prop.set(gather.get().getExpectedJniSymbols());
+              c.getExpectedSymbols().add(prop);
+            }
           });
         }
       }
@@ -114,7 +123,7 @@ public class JniExtension {
       if (crossMap.contains(b.getTargetMachine())) {
         b.getCompileTask().get().dependsOn(extractTask);
         DefaultCppBinary bin = (DefaultCppBinary) b;
-        ExtractJniFilesTask exTask = extractTask.get();
+        ExtractCrossJniHeaders exTask = extractTask.get();
         File dir = new File(exTask.outputDirectory.getAsFile().get(), "arm-linux-jni");
         File linuxDir = new File(dir, "linux");
         project.getDependencies().add(bin.getIncludePathConfiguration().getName(), project.files(dir, linuxDir));
@@ -138,20 +147,14 @@ public class JniExtension {
     this.checkSymbols = checkSymbols;
   }
 
-  public List<DirectoryProperty> getJniHeaderLocations() {
-    return jniHeaderLocs;
-  }
-
-  public void addJavaCompile(TaskProvider<JavaCompile> compileTask) {
+  public void addJavaCompile(JavaCompile compileTask) {
     javaAdded = true;
-    compileTask.configure(c -> {
-      ExtensionAware ext = (ExtensionAware)c;
-      JavaJniExtension javaJni = ext.getExtensions().findByType(JavaJniExtension.class);
-      javaJni.addJniHeaderGeneration();
-      // Depend on include
-      library.getPrivateHeaders().from(javaJni.jniHeaderLoc);
-      jniHeaderLocs.add(javaJni.jniHeaderLoc);
-    });
+    ExtensionAware ext = (ExtensionAware)compileTask;
+    JavaJniExtension javaJni = ext.getExtensions().findByType(JavaJniExtension.class);
+    javaJni.setupJni();
+    // Depend on include
+    library.getPrivateHeaders().from(javaJni.jniHeaderLocation);
+    expectedSymbolsTasks.add(javaJni.gatherExpectedJniSymbols);
 
     library.getBinaries().configureEach(c -> {
       c.getCompileTask().get().dependsOn(compileTask);

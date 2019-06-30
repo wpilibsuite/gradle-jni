@@ -10,25 +10,28 @@ import org.gradle.language.cpp.CppLibrary;
 
 class GradleJni implements Plugin<Project> {
   public void apply(Project project) {
-    TaskProvider<ExtractJniFilesTask> extractEmbeddedJniTask = null;
+    TaskProvider<ExtractCrossJniHeaders> extractTask;
     try {
-      extractEmbeddedJniTask = project.getRootProject().getTasks().named("extractEmbeddedJni", ExtractJniFilesTask.class);
+      extractTask = project.getRootProject().getTasks().named("extractEmbeddedCrossJniHeaders", ExtractCrossJniHeaders.class);
     } catch (UnknownTaskException ex) {
-      extractEmbeddedJniTask = project.getRootProject().getTasks().register("extractEmbeddedJni", ExtractJniFilesTask.class);
+      extractTask = project.getRootProject().getTasks().register("extractEmbeddedCrossJniHeaders", ExtractCrossJniHeaders.class);
     }
 
-    final TaskProvider<ExtractJniFilesTask> extractTask = extractEmbeddedJniTask;
+    TaskProvider<ExtractCrossJniHeaders> extractCrossJniTask = extractTask;
 
-    //CppBasePlugin
-
-    project.getComponents().withType(CppLibrary.class, o -> {
-      ExtensionAware ext = (ExtensionAware)o;
-      ext.getExtensions().add(JniExtension.class, "jni", project.getObjects().newInstance(JniExtension.class, project, o, extractTask));
-    });
-
-    project.getTasks().withType(JavaCompile.class).configureEach(c -> {
+    project.getTasks().withType(JavaCompile.class, c -> {
       ExtensionAware ext = (ExtensionAware)c;
       ext.getExtensions().add(JavaJniExtension.class, "jni", project.getObjects().newInstance(JavaJniExtension.class, project, c));
     });
+
+    try {
+      project.getComponents().withType(CppLibrary.class, o -> {
+        ExtensionAware ext = (ExtensionAware)o;
+        ext.getExtensions().add(JniExtension.class, "jni", project.getObjects().newInstance(JniExtension.class, project, o, extractCrossJniTask));
+      });
+    } catch (NoClassDefFoundError ex) {
+
+    }
+
   }
 }

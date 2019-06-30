@@ -19,6 +19,7 @@ import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.internal.service.ServiceRegistry;
@@ -26,17 +27,17 @@ import org.gradle.internal.service.ServiceRegistry;
 public class JniSymbolCheck extends DefaultTask {
   private RegularFileProperty foundSymbols;
 
-  private RegularFileProperty symbolFile;
+  private List<RegularFileProperty> expectedSymbols;
 
-  private List<DirectoryProperty> headerLocations;
+  private RegularFileProperty compiledSymbols;
 
   private Property<Boolean> isWindows;
 
   @Inject
   public JniSymbolCheck(ObjectFactory factory, ServiceRegistry serviceRegistry) {
     foundSymbols = factory.fileProperty();
-    symbolFile = factory.fileProperty();
-    headerLocations = new ArrayList<>();
+    compiledSymbols = factory.fileProperty();
+    expectedSymbols = new ArrayList<>();
     isWindows = factory.property(Boolean.class);
 
     setGroup("JNI");
@@ -62,33 +63,27 @@ public class JniSymbolCheck extends DefaultTask {
   /**
    * @return the symbolFile
    */
-  @InputFile
-  public RegularFileProperty getSymbolFile() {
-    return symbolFile;
+  @OutputFile
+  public RegularFileProperty getCompiledSymbols() {
+    return compiledSymbols;
   }
 
   /**
-   * @return the headerLocations
+   * @return the symbolFile
    */
-  @Input
-  public List<DirectoryProperty> getHeaderLocations() {
-    return headerLocations;
+  @InputFiles
+  public List<RegularFileProperty> getExpectedSymbols() {
+    return expectedSymbols;
   }
 
-  private List<String> getExpectedSymbols() {
+  private List<String> getExpectedSymbolsImpl() {
     // Get expected symbols
     List<String> symbolList = new ArrayList<>();
-    for (DirectoryProperty loc : headerLocations) {
-      FileTree tree = getProject().fileTree(loc.get().getAsFile().toString());
-      for (File file : tree) {
-        try (Stream<String> stream = Files.lines(file.toPath())) {
-          stream.map(s -> s.trim()).filter(s -> !s.isEmpty() && (s.startsWith("JNIEXPORT ") && s.contains("JNICALL")))
-              .forEach(line -> {
-                symbolList.add(line.split("JNICALL")[1].trim());
-              });
-        } catch (IOException e) {
-          continue;
-        }
+    for (RegularFileProperty file : getExpectedSymbols()) {
+      try (Stream<String> stream = Files.lines(file.get().getAsFile().toPath())) {
+        stream.forEach(symbolList::add);
+      } catch (IOException e) {
+        continue;
       }
     }
     return symbolList;
@@ -101,14 +96,14 @@ public class JniSymbolCheck extends DefaultTask {
     String dumpBinSymbols;
 
     try {
-      dumpBinSymbols = new String(Files.readAllBytes(symbolFile.get().getAsFile().toPath()));
+      dumpBinSymbols = new String(Files.readAllBytes(compiledSymbols.get().getAsFile().toPath()));
     } catch (IOException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
       dumpBinSymbols = "";
     }
 
-    List<String> symbolList = getExpectedSymbols();
+    List<String> symbolList = getExpectedSymbolsImpl();
 
     for (String symbol : symbolList) {
       if (!dumpBinSymbols.contains(symbol + " =") && !dumpBinSymbols.contains(symbol + "@")) {
@@ -139,11 +134,11 @@ public class JniSymbolCheck extends DefaultTask {
 
   private void handleUnixSymbolCheck() {
 
-    List<String> symbolList = getExpectedSymbols();
+    List<String> symbolList = getExpectedSymbolsImpl();
 
     String nmSymbols;
     try {
-      nmSymbols = new String(Files.readAllBytes(symbolFile.get().getAsFile().toPath()));
+      nmSymbols = new String(Files.readAllBytes(compiledSymbols.get().getAsFile().toPath()));
       nmSymbols.replace("\r", "");
     } catch (IOException e) {
       // TODO Auto-generated catch block

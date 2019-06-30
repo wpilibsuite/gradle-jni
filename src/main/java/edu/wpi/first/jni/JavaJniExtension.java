@@ -7,39 +7,47 @@ import javax.inject.Inject;
 
 import org.gradle.api.Project;
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.compile.JavaCompile;
 
 public class JavaJniExtension {
 
-  private JavaCompile compileTask;
-  private Project project;
-  private boolean headerGenerationConfigured = false;
+  private final JavaCompile compileTask;
+  private final Project project;
 
-  public DirectoryProperty jniHeaderLoc;
+  public DirectoryProperty jniHeaderLocation;
+  public TaskProvider<GatherExpectedJniSymbols> gatherExpectedJniSymbols = null;
 
 
   @Inject
   public JavaJniExtension(Project project, JavaCompile compileTask) {
     this.compileTask = compileTask;
     this.project = project;
-    jniHeaderLoc = project.getObjects().directoryProperty();
-    jniHeaderLoc.set(project.file(project.getBuildDir().toString() + "/jniinclude/" + compileTask.getName()));
+    jniHeaderLocation = project.getObjects().directoryProperty();
+    jniHeaderLocation.set(project.file(project.getBuildDir().toString() + "/jni/" + compileTask.getName() + "/include"));
   }
 
-  public void addJniHeaderGeneration() {
-    if (!headerGenerationConfigured) {
+  public void setupJni() {
+    if (gatherExpectedJniSymbols != null) {
       return;
     }
-    headerGenerationConfigured = true;
-    compileTask.getOutputs().dir(jniHeaderLoc);
+
+    gatherExpectedJniSymbols = project.getTasks().register(compileTask.getName() + "GatherExpectedJniSymbols", GatherExpectedJniSymbols.class, (t) -> {
+      t.setDescription("Gather expected JNI symbols for " + compileTask.getName());
+      t.dependsOn(compileTask);
+      t.setJavaCompileTask(compileTask);
+    });
+
+
+    compileTask.getOutputs().dir(jniHeaderLocation);
     compileTask.getOptions().getCompilerArgumentProviders().add(() -> {
       List<String> args =  new ArrayList<String>();
       args.add("-h");
-      args.add(jniHeaderLoc.get().getAsFile().toString());
+      args.add(jniHeaderLocation.get().getAsFile().toString());
       return args;
     });
     compileTask.doFirst(t -> {
-        project.delete(jniHeaderLoc.get());
+        project.delete(jniHeaderLocation.get());
     });
   }
 }

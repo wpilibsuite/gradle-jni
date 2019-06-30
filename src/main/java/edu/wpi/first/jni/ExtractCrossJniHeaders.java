@@ -14,17 +14,17 @@ import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
 
-public class ExtractJniFilesTask extends DefaultTask {
+public class ExtractCrossJniHeaders extends DefaultTask {
   @OutputDirectory
   public final DirectoryProperty outputDirectory;
 
   @Inject
-  public ExtractJniFilesTask(ObjectFactory factory) {
+  public ExtractCrossJniHeaders(ObjectFactory factory) {
     outputDirectory = factory.directoryProperty();
     getOutputs().dir(outputDirectory);
-    outputDirectory.set(getProject().getLayout().getBuildDirectory().dir("embeddedJniHeaders"));
+    outputDirectory.set(getProject().getLayout().getBuildDirectory().dir("embeddedCrossJniHeaders"));
     setGroup("JNI");
-    setDescription("Extracts the embedded JNI headers");
+    setDescription("Extracts the embedded Cross Compile JNI headers");
   }
 
   @TaskAction
@@ -34,7 +34,7 @@ public class ExtractJniFilesTask extends DefaultTask {
     File linuxDir = new File(mainDir, "linux");
     linuxDir.mkdirs();
 
-    InputStream is = ExtractJniFilesTask.class.getResourceAsStream("/arm-linux-jni/jni.h");
+    InputStream is = ExtractCrossJniHeaders.class.getResourceAsStream("/arm-linux-jni/jni.h");
     OutputStream os = null;
 
     byte[] buffer = new byte[1024];
@@ -55,7 +55,7 @@ public class ExtractJniFilesTask extends DefaultTask {
         }
     }
 
-    is = ExtractJniFilesTask.class.getResourceAsStream("/arm-linux-jni/linux/jni_md.h");
+    is = ExtractCrossJniHeaders.class.getResourceAsStream("/arm-linux-jni/linux/jni_md.h");
     os = null;
 
     buffer = new byte[1024];
