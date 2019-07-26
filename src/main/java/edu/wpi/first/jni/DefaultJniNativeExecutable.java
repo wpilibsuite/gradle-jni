@@ -8,14 +8,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class DefaultJniNativeLibrary extends DefaultNativeLibrarySpec
-    implements JniNativeLibrarySpec {
+public class DefaultJniNativeExecutable extends DefaultNativeLibrarySpec
+    implements JniNativeExecutableSpec {
   private List<JavaCompile> javaCompile = new ArrayList<>();
   private List<JniCrossCompileOptions> crossCompileOptions = new ArrayList<>();
   private Map<JavaCompile, String> jniHeaderLocation = new HashMap<>();
   private boolean enableCheckTask = false;
 
-  public DefaultJniNativeLibrary() {
+  public DefaultJniNativeExecutable() {
     super();
   }
 
