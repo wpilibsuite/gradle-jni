@@ -55,7 +55,7 @@ public class JniRules extends RuleSource {
     String projName = input.substring(0, 1).toUpperCase() + input.substring(1);
     String checkTaskName = "check" + projName + "JniSymbols";
     tasks.create(checkTaskName, JniSymbolCheck.class, task -> {
-      task.setGroup("Build");
+      task.setGroup("JNI");
       task.setDescription("Checks that JNI symbols exist in the native libraries");
       task.dependsOn(sharedBinary.getTasks().getLink());
       task.getInputs().file(sharedBinary.getSharedLibraryFile());
