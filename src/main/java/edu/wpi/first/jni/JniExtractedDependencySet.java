@@ -19,7 +19,7 @@ public class JniExtractedDependencySet implements NativeDependencySet {
 
   public FileCollection getIncludeRoots() {
     ExtractJniFilesTask extractTask = (ExtractJniFilesTask) m_property.get();
-    File dir = new File(extractTask.outputDirectory.getAsFile().get(), "arm-linux-jni");
+    File dir = new File(extractTask.getOutputDirectory().getAsFile().get(), "arm-linux-jni");
     File linuxDir = new File(dir, "linux");
     return m_project.files(dir, linuxDir);
   }
