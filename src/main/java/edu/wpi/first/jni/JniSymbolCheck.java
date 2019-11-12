@@ -20,7 +20,7 @@ import org.gradle.api.GradleException;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.model.ObjectFactory;
-import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.nativeplatform.SharedLibraryBinarySpec;
@@ -51,7 +51,7 @@ public class JniSymbolCheck extends DefaultTask {
     binaryToCheck = binary;
   }
 
-  @Input
+  @Internal
   public SharedLibraryBinarySpec getBinaryToCheck() {
     return binaryToCheck;
   }
@@ -62,7 +62,7 @@ public class JniSymbolCheck extends DefaultTask {
     this.jniComponent = jniComponent;
   }
 
-  @Input
+  @Internal
   public JniNativeLibrarySpec getJniComponent() {
     return jniComponent;
   }
