@@ -62,10 +62,10 @@ public class JniRules extends RuleSource {
       for (String j : jniComponent.getJniHeaderLocations().values()) {
         task.getInputs().dir(j);
       }
-      task.getOutputs().file(task.foundSymbols);
-      task.binaryToCheck = sharedBinary;
-      task.jniComponent = jniComponent;
-      task.foundSymbols.set(project.getLayout().getBuildDirectory().file("jnisymbols/" + projName + "/symbols.txt"));
+      task.getOutputs().file(task.getFoundSymbols());
+      task.setBinaryToCheck(sharedBinary);
+      task.setJniComponent(jniComponent);
+      task.getFoundSymbols().set(project.getLayout().getBuildDirectory().file("jnisymbols/" + projName + "/symbols.txt"));
     });
     binary.checkedBy(tasks.get(checkTaskName));
   }

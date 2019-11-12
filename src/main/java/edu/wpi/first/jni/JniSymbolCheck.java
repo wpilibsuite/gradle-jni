@@ -38,14 +38,34 @@ import edu.wpi.first.jni.net.fornwall.jelf.ElfSection;
 import edu.wpi.first.jni.net.fornwall.jelf.ElfSymbol;
 
 public class JniSymbolCheck extends DefaultTask {
+  private final RegularFileProperty foundSymbols;
+
   @OutputFile
-  public RegularFileProperty foundSymbols;
+  public RegularFileProperty getFoundSymbols() {
+    return foundSymbols;
+  }
+
+  private SharedLibraryBinarySpec binaryToCheck;
+
+  public void setBinaryToCheck(SharedLibraryBinarySpec binary) {
+    binaryToCheck = binary;
+  }
 
   @Input
-  public SharedLibraryBinarySpec binaryToCheck;
+  public SharedLibraryBinarySpec getBinaryToCheck() {
+    return binaryToCheck;
+  }
+
+  private JniNativeLibrarySpec jniComponent;
+
+  public void setJniComponent(JniNativeLibrarySpec jniComponent) {
+    this.jniComponent = jniComponent;
+  }
 
   @Input
-  public JniNativeLibrarySpec jniComponent;
+  public JniNativeLibrarySpec getJniComponent() {
+    return jniComponent;
+  }
 
   @Inject
   public JniSymbolCheck(ObjectFactory factory) {

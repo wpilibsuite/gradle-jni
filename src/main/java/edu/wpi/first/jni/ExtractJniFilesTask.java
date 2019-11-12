@@ -15,8 +15,13 @@ import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
 
 public class ExtractJniFilesTask extends DefaultTask {
+
+  private final DirectoryProperty outputDirectory;
+
   @OutputDirectory
-  public final DirectoryProperty outputDirectory;
+  public DirectoryProperty getOutputDirectory() {
+      return outputDirectory;
+  }
 
   @Inject
   public ExtractJniFilesTask(ObjectFactory factory) {
