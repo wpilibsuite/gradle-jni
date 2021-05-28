@@ -1,6 +1,7 @@
 package edu.wpi.first.jni;
 
 import org.gradle.api.tasks.compile.JavaCompile;
+import org.gradle.api.file.DirectoryProperty;
 import org.gradle.nativeplatform.internal.DefaultNativeLibrarySpec;
 
 import java.util.ArrayList;
@@ -12,7 +13,7 @@ public class DefaultJniNativeExecutable extends DefaultNativeLibrarySpec
     implements JniNativeExecutableSpec {
   private List<JavaCompile> javaCompile = new ArrayList<>();
   private List<JniCrossCompileOptions> crossCompileOptions = new ArrayList<>();
-  private Map<JavaCompile, String> jniHeaderLocation = new HashMap<>();
+  private Map<JavaCompile, DirectoryProperty> jniHeaderLocation = new HashMap<>();
   private boolean enableCheckTask = false;
 
   public DefaultJniNativeExecutable() {
@@ -40,12 +41,12 @@ public class DefaultJniNativeExecutable extends DefaultNativeLibrarySpec
   }
 
   @Override
-  public Map<JavaCompile, String> getJniHeaderLocations() {
+  public Map<JavaCompile, DirectoryProperty> getJniHeaderLocations() {
     return jniHeaderLocation;
   }
 
   @Override
-  public void setJniHeaderLocations(Map<JavaCompile, String> location) {
+  public void setJniHeaderLocations(Map<JavaCompile, DirectoryProperty> location) {
     jniHeaderLocation = location;
   }
 

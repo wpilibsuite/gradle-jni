@@ -1,6 +1,7 @@
 package edu.wpi.first.jni;
 
 import org.gradle.api.tasks.compile.JavaCompile;
+import org.gradle.api.file.DirectoryProperty;
 import org.gradle.platform.base.VariantComponentSpec;
 
 import java.util.List;
@@ -19,5 +20,5 @@ public interface JniNativeBaseSpec extends VariantComponentSpec, JniNativeSpecIn
 
     void setEnableCheckTask(boolean val);
 
-    Map<JavaCompile, String> getJniHeaderLocations();
+    Map<JavaCompile, DirectoryProperty> getJniHeaderLocations();
 }

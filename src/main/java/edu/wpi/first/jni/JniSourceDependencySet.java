@@ -1,16 +1,17 @@
 package edu.wpi.first.jni;
 
 import org.gradle.api.Project;
+import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileCollection;
 import org.gradle.nativeplatform.NativeDependencySet;
 
 import java.util.Collection;
 
 public class JniSourceDependencySet implements NativeDependencySet {
-  protected Collection<String> m_jniHeaders;
+  protected Collection<DirectoryProperty> m_jniHeaders;
   protected Project m_project;
 
-  public JniSourceDependencySet(Collection<String> jniHeaders, Project project) {
+  public JniSourceDependencySet(Collection<DirectoryProperty> jniHeaders, Project project) {
     m_jniHeaders = jniHeaders;
     m_project = project;
   }
