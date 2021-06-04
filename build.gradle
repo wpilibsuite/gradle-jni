@@ -1,11 +1,11 @@
 plugins {
     id 'java-gradle-plugin'
     id 'maven-publish'
-    id "com.gradle.plugin-publish" version "0.12.0"
+    id "com.gradle.plugin-publish" version "0.15.0"
 }
 
 group 'edu.wpi.first'
-version '0.11.0'
+version '1.0.0'
 
 if (project.hasProperty('publishVersion')) {
     version = project.publishVersion
@@ -41,5 +41,5 @@ gradlePlugin {
 }
 
 wrapper {
-    gradleVersion = '6.0'
+    gradleVersion = '7.0.2'
 }
