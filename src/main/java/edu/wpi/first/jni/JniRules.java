@@ -178,8 +178,6 @@ public class JniRules extends RuleSource {
     }
   }
 
-  public static native void doThing();
-
   @Validate
   void createJniTasks(ComponentSpecContainer components, ProjectLayout projectLayout) {
     for (ComponentSpec oComponent : components) {

@@ -1,0 +1,23 @@
+plugins {
+    id 'java'
+    id 'cpp'
+    id 'edu.wpi.first.GradleJni' version '1.0.0'
+}
+
+model {
+    components {
+        library(JniNativeLibrarySpec) {
+            enableCheckTask true
+            javaCompileTasks << compileJava
+
+            sources {
+                cpp {
+                    source {
+                        srcDirs 'src/main/native/cpp'
+                        include '**/*.cpp'
+                    }
+                }
+            }
+        }
+    }
+}
