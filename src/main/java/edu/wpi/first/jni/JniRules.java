@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.plugins.ExtensionContainer;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.compile.JavaCompile;
@@ -61,7 +62,7 @@ public class JniRules extends RuleSource {
       task.setDescription("Checks that JNI symbols exist in the native libraries");
       task.dependsOn(sharedBinary.getTasks().getLink());
       task.getInputs().file(sharedBinary.getSharedLibraryFile());
-      for (String j : jniComponent.getJniHeaderLocations().values()) {
+      for (DirectoryProperty j : jniComponent.getJniHeaderLocations().values()) {
         task.getInputs().dir(j);
       }
       task.getOutputs().file(task.getFoundSymbols());
@@ -179,7 +180,6 @@ public class JniRules extends RuleSource {
 
   @Validate
   void createJniTasks(ComponentSpecContainer components, ProjectLayout projectLayout) {
-    Project project = (Project) projectLayout.getProjectIdentifier();
     for (ComponentSpec oComponent : components) {
       if (oComponent instanceof JniNativeBaseSpec) {
         JniNativeBaseSpec component = (JniNativeBaseSpec) oComponent;
@@ -187,15 +187,7 @@ public class JniRules extends RuleSource {
         assert !component.getJavaCompileTasks().isEmpty();
 
         for (JavaCompile compileTask : component.getJavaCompileTasks()) {
-          String jniHeaderLocation = project.getBuildDir().toString() + "/jniinclude/" + compileTask.getName();
-          compileTask.getOutputs().dir(jniHeaderLocation);
-          component.getJniHeaderLocations().put(compileTask, jniHeaderLocation);
-          List<String> args = compileTask.getOptions().getCompilerArgs();
-          args.add("-h");
-          args.add(jniHeaderLocation);
-          compileTask.doFirst(t -> {
-            project.delete(jniHeaderLocation);
-          });
+          component.getJniHeaderLocations().put(compileTask, compileTask.getOptions().getHeaderOutputDirectory());
         }
       }
     }

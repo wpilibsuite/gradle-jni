@@ -17,6 +17,7 @@ import javax.inject.Inject;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
+import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.model.ObjectFactory;
@@ -75,7 +76,7 @@ public class JniSymbolCheck extends DefaultTask {
   private List<String> getExpectedSymbols() {
     // Get expected symbols
     List<String> symbolList = new ArrayList<>();
-    for (String loc : jniComponent.getJniHeaderLocations().values()) {
+    for (DirectoryProperty loc : jniComponent.getJniHeaderLocations().values()) {
       FileTree tree = getProject().fileTree(loc);
       for (File file : tree) {
         try (Stream<String> stream = Files.lines(file.toPath())) {
