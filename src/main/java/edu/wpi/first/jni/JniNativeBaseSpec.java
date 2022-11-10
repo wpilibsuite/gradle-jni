@@ -20,5 +20,9 @@ public interface JniNativeBaseSpec extends VariantComponentSpec, JniNativeSpecIn
 
     void setEnableCheckTask(boolean val);
 
+    List<String> getCheckSkipSymbols();
+
+    void setCheckSkipSymbols(List<String> symbols);
+
     Map<JavaCompile, DirectoryProperty> getJniHeaderLocations();
 }
