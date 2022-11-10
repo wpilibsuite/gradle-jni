@@ -60,6 +60,7 @@ public class JniRules extends RuleSource {
     tasks.create(checkTaskName, JniSymbolCheck.class, task -> {
       task.setGroup("JNI");
       task.setDescription("Checks that JNI symbols exist in the native libraries");
+      task.getSkipCheckSymbols().set(jniComponent.getCheckSkipSymbols());
       task.dependsOn(sharedBinary.getTasks().getLink());
       task.getInputs().file(sharedBinary.getSharedLibraryFile());
       for (DirectoryProperty j : jniComponent.getJniHeaderLocations().values()) {

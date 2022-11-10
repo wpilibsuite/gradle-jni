@@ -15,6 +15,17 @@ public class DefaultJniNativeExecutable extends DefaultNativeLibrarySpec
   private List<JniCrossCompileOptions> crossCompileOptions = new ArrayList<>();
   private Map<JavaCompile, DirectoryProperty> jniHeaderLocation = new HashMap<>();
   private boolean enableCheckTask = false;
+  private List<String> checkSkipSymbols = new ArrayList<>();
+
+  @Override
+  public void setCheckSkipSymbols(List<String> checkSkipSymbols) {
+    this.checkSkipSymbols = checkSkipSymbols;
+  }
+
+  @Override
+  public List<String> getCheckSkipSymbols() {
+    return checkSkipSymbols;
+  }
 
   public DefaultJniNativeExecutable() {
     super();

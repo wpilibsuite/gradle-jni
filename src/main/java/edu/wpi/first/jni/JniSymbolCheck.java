@@ -21,6 +21,8 @@ import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.model.ObjectFactory;
+import org.gradle.api.provider.ListProperty;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
@@ -44,6 +46,13 @@ public class JniSymbolCheck extends DefaultTask {
   @OutputFile
   public RegularFileProperty getFoundSymbols() {
     return foundSymbols;
+  }
+
+  private final ListProperty<String> skipSymbols;
+
+  @Input
+  public ListProperty<String> getSkipCheckSymbols() {
+    return skipSymbols;
   }
 
   private SharedLibraryBinarySpec binaryToCheck;
@@ -71,6 +80,8 @@ public class JniSymbolCheck extends DefaultTask {
   @Inject
   public JniSymbolCheck(ObjectFactory factory) {
     foundSymbols = factory.fileProperty();
+    skipSymbols = factory.listProperty(String.class);
+    skipSymbols.convention(List.of());
   }
 
   private List<String> getExpectedSymbols() {
@@ -88,6 +99,10 @@ public class JniSymbolCheck extends DefaultTask {
           continue;
         }
       }
+    }
+    List<String> skip = skipSymbols.get();
+    if (!skip.isEmpty()) {
+      symbolList.removeAll(skip);
     }
     return symbolList;
   }
