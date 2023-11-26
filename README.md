@@ -1,6 +1,6 @@
 # Gradle JNI
 
-[![Build status](https://ci.appveyor.com/api/projects/status/4a80h0wnii4t7bf0/branch/master?svg=true)](https://ci.appveyor.com/project/ThadHouse/gradle-jni/branch/master)
+[![CI](https://github.com/wpilibsuite/gradle-jni/actions/workflows/main.yml/badge.svg)](https://github.com/wpilibsuite/gradle-jni/actions/workflows/main.yml)
 
 gradle-jni is a utility library for enabling easy to build JNI compatible plugins
 
