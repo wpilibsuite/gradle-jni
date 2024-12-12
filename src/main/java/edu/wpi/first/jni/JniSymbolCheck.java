@@ -34,6 +34,7 @@ import org.gradle.nativeplatform.toolchain.VisualCpp;
 import org.gradle.nativeplatform.toolchain.VisualCppPlatformToolChain;
 import org.gradle.nativeplatform.toolchain.internal.msvcpp.VisualStudioInstall;
 import org.gradle.platform.base.internal.toolchain.SearchResult;
+import org.gradle.process.ExecOperations;
 
 import edu.wpi.first.jni.net.fornwall.jelf.ElfException;
 import edu.wpi.first.jni.net.fornwall.jelf.ElfFile;
@@ -77,11 +78,14 @@ public class JniSymbolCheck extends DefaultTask {
     return jniComponent;
   }
 
+  private ExecOperations operations;
+
   @Inject
-  public JniSymbolCheck(ObjectFactory factory) {
+  public JniSymbolCheck(ObjectFactory factory, ExecOperations operations) {
     foundSymbols = factory.fileProperty();
     skipSymbols = factory.listProperty(String.class);
     skipSymbols.convention(List.of());
+    this.operations = operations;
   }
 
   private List<String> getExpectedSymbols() {
@@ -116,7 +120,7 @@ public class JniSymbolCheck extends DefaultTask {
     String library = binaryToCheck.getSharedLibraryFile().getAbsolutePath();
 
     ByteArrayOutputStream dumpbinOutput = new ByteArrayOutputStream();
-    getProject().exec(exec -> {
+    operations.exec(exec -> {
       exec.commandLine(dumpBinLoc, "/NOLOGO", "/EXPORTS", library);
       exec.setStandardOutput(dumpbinOutput);
     });
@@ -211,7 +215,7 @@ public class JniSymbolCheck extends DefaultTask {
     String library = binaryToCheck.getSharedLibraryFile().getAbsolutePath();
 
     ByteArrayOutputStream nmOutput = new ByteArrayOutputStream();
-    getProject().exec(exec -> {
+    operations.exec(exec -> {
       exec.commandLine("nm", library);
       exec.setStandardOutput(nmOutput);
     });
