@@ -1,45 +1,35 @@
 plugins {
     id 'java-gradle-plugin'
     id 'maven-publish'
-    id "com.gradle.plugin-publish" version "0.15.0"
+    id "com.gradle.plugin-publish" version "1.3.0"
 }
 
 group 'edu.wpi.first'
-version '1.1.0'
+version '1.2.0'
 
 if (project.hasProperty('publishVersion')) {
     version = project.publishVersion
 }
 
-
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
-pluginBundle {
+gradlePlugin {
     website = 'https://github.com/wpilibsuite/gradle-jni'
     vcsUrl = 'https://github.com/wpilibsuite/gradle-jni'
-    description = 'This plugin provides easy to use JNI support for gradle.'
-    tags = ['groovy', 'jni', 'utils', 'maven', 'frc', 'wpilib']
-
     plugins {
         GradleJni {
             id = 'edu.wpi.first.GradleJni'
             displayName = 'Gradle JNI'
-        }
-    }
-}
-
-gradlePlugin {
-    plugins {
-        GradleJni {
-            id = 'edu.wpi.first.GradleJni'
             implementationClass = 'edu.wpi.first.jni.GradleJni'
+            description = 'This plugin provides easy to use JNI support for gradle.'
+            tags = ['groovy', 'jni', 'utils', 'maven', 'frc', 'wpilib']
         }
     }
 }
 
 wrapper {
-    gradleVersion = '7.5.1'
+    gradleVersion = '8.11'
 }
