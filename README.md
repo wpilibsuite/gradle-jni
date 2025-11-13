@@ -6,7 +6,7 @@ gradle-jni is a utility library for enabling easy to build JNI compatible plugin
 
 ```gradle
 plugins {
-  id 'edu.wpi.first.GradleJni' version '0.1.6'
+  id 'org.wpilib.GradleJni' version '2027.0.0'
 }
 
 model {
@@ -27,6 +27,6 @@ JNICrossCompileOptions('toolChainName') // Use this to match the cross compile o
 JNICrossCompileOptions('operatingSystem', 'architecture') // Use this to match the cross compile options to a specific tool chain arch and os.
 
 // For both of these options, they take an optional last parameter of List<String> of directories
-If this parameter is added, the directories passed in will be used for the include paths for the JNI headers. 
+If this parameter is added, the directories passed in will be used for the include paths for the JNI headers.
 If this parameter is not passed in, for any matching toolchain, a set of headers included in the plugin will be used. These headers are standard for 32 bit embedded arm toolchains.
 ```

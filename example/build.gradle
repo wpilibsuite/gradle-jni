@@ -1,7 +1,7 @@
 plugins {
     id 'java'
     id 'cpp'
-    id 'edu.wpi.first.GradleJni' version '1.0.0'
+    id 'org.wpilib.GradleJni' version '2027.0.0'
 }
 
 model {
