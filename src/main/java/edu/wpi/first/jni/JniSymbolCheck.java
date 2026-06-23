@@ -78,7 +78,11 @@ public class JniSymbolCheck extends DefaultTask {
     return jniComponent;
   }
 
-  private ExecOperations operations;
+  private final ExecOperations operations;
+  private final GradleJniConfiguration ext;
+  private final ObjectFactory factory;
+
+
 
   @Inject
   public JniSymbolCheck(ObjectFactory factory, ExecOperations operations) {
@@ -86,13 +90,15 @@ public class JniSymbolCheck extends DefaultTask {
     skipSymbols = factory.listProperty(String.class);
     skipSymbols.convention(List.of());
     this.operations = operations;
+    this.factory = factory;
+    ext = getProject().getExtensions().getByType(GradleJniConfiguration.class);
   }
 
   private List<String> getExpectedSymbols() {
     // Get expected symbols
     List<String> symbolList = new ArrayList<>();
     for (DirectoryProperty loc : jniComponent.getJniHeaderLocations().values()) {
-      FileTree tree = getProject().fileTree(loc);
+      FileTree tree = factory.fileTree().from(loc);
       for (File file : tree) {
         try (Stream<String> stream = Files.lines(file.toPath())) {
           stream.map(s -> s.trim()).filter(s -> !s.isEmpty() && (s.startsWith("JNIEXPORT ") && s.contains("JNICALL")))
@@ -249,7 +255,6 @@ public class JniSymbolCheck extends DefaultTask {
 
   @TaskAction
   public void checkSymbols() {
-    GradleJniConfiguration ext = getProject().getExtensions().getByType(GradleJniConfiguration.class);
     boolean found = false;
 
     NativeToolChain toolChain = binaryToCheck.getToolChain();
